@@ -681,6 +681,14 @@ const POS_ORDER=["GK","DF","MF","FW"];
 const NOW=()=>new Date();
 const fl=t=>FLAG[t]||"";
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+/* ---------- LOCAL TIME ZONE ---------- */
+// All match times are stored as authoritative UTC in m.gmt and rendered in the
+// browser's local time zone. m.local / m.date are legacy US-centric fallbacks.
+const TZNAME=(()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone||'';}catch(e){return '';}})();
+const TZABBR=(()=>{try{return new Intl.DateTimeFormat(undefined,{timeZoneName:'short'}).formatToParts(new Date()).find(p=>p.type==='timeZoneName').value;}catch(e){return '';}})();
+function localTime(gmt){try{return new Date(gmt).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});}catch(e){return '';}}
+function localDayLabel(gmt){try{return new Date(gmt).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});}catch(e){return '';}}
+function localDayKey(gmt){const d=new Date(gmt);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function matchState(m){
   // Prefer authoritative ESPN state when present
   if(m.espnState==='in') return "live";
@@ -703,24 +711,27 @@ function renderSchedule(){
   const t=document.getElementById('fTeam').value;
   const up=document.getElementById('fUpcoming').checked;
   const body=document.getElementById('scheduleBody'); body.innerHTML='';
-  let days={}, order=[], shown=0;
+  let days={}, labels={}, order=[], shown=0;
   MATCHES.forEach(m=>{
     const grp=TEAM_GROUP[m.h];
     if(g&&grp!==g) return;
     if(t&&m.h!==t&&m.a!==t) return;
     const st=matchState(m);
     if(up&&(st!=='upcoming')) return;
-    if(!days[m.date]){days[m.date]=[];order.push(m.date);}
-    days[m.date].push({m,st,grp}); shown++;
+    const key=localDayKey(m.gmt);
+    if(!days[key]){days[key]=[];labels[key]=localDayLabel(m.gmt);order.push(key);}
+    days[key].push({m,st,grp}); shown++;
   });
+  order.sort();
   order.forEach(d=>{
     const dg=document.createElement('div'); dg.className='daygroup';
-    dg.innerHTML=`<div class="dh"><span>${d}</span><span class="gchip">${days[d].length} match${days[d].length>1?'es':''}</span></div>`;
+    days[d].sort((x,y)=>new Date(x.m.gmt)-new Date(y.m.gmt));
+    dg.innerHTML=`<div class="dh"><span>${labels[d]}</span><span class="gchip">${days[d].length} match${days[d].length>1?'es':''}</span></div>`;
     days[d].forEach(({m,st,grp})=>{
       let center;
       if(st==='ft') center=`<div class="m-score">${m.hs}–${m.as}</div><div><span class="badge b-ft">FT</span></div>`;
       else if(st==='live') center=`<div class="m-score">${m.hs??0}–${m.as??0}</div><div><span class="badge b-live">● Live</span>${m.clock?` <span class="m-clock">${esc(m.clock)}</span>`:''}</div>`;
-      else center=`<div class="m-vs">v</div><div class="m-time">${m.local}</div>`;
+      else center=`<div class="m-vs">v</div><div class="m-time">${localTime(m.gmt)}</div>`;
       const el=document.createElement('div');
       el.className='match'+(isToday(m)?' today':'');
       el.innerHTML=`
@@ -732,7 +743,7 @@ function renderSchedule(){
     });
     body.appendChild(dg);
   });
-  document.getElementById('schedCount').textContent=shown+' of '+MATCHES.length+' matches';
+  document.getElementById('schedCount').textContent=shown+' of '+MATCHES.length+' matches'+(TZABBR?' · times in '+TZABBR:'');
 }
 function isToday(m){const k=new Date(m.gmt),n=NOW();return k.toDateString()===n.toDateString();}
 
@@ -742,6 +753,7 @@ function computeStandings(g){
   MATCHES.forEach(m=>{
     if(TEAM_GROUP[m.h]!==g) return;
     if(m.hs==null||m.as==null) return;
+    if(matchState(m)!=='ft') return;   // only count finished matches, not live in-progress scores
     const H=rows[m.h],A=rows[m.a];
     H.P++;A.P++;H.GF+=m.hs;H.GA+=m.as;A.GF+=m.as;A.GA+=m.hs;
     if(m.hs>m.as){H.W++;A.L++;H.Pts+=3;}
@@ -843,6 +855,7 @@ function teamStats(team){
   const form=[];
   fixtures.forEach(m=>{
     if(m.hs==null||m.as==null) return;
+    if(matchState(m)!=='ft') return;   // only count finished matches, not live in-progress scores
     const home=m.h===team, gf=home?m.hs:m.as, ga=home?m.as:m.hs;
     s.P++;s.GF+=gf;s.GA+=ga;
     if(gf>ga){s.W++;s.Pts+=3;form.push('W');}
@@ -888,8 +901,8 @@ function openTeam(team){
     const home=m.h===team, opp=home?m.a:m.h, st=matchState(m);
     let res;
     if(st==='ft'||st==='live'){const gf=home?m.hs:m.as,ga=home?m.as:m.hs;res=`<span class="res">${gf??0}–${ga??0}</span>`;}
-    else res=`<span class="res" style="color:var(--muted);font-weight:600">${m.local}</span>`;
-    html+=`<div class="fixrow"><span>${home?'vs':'@'}</span><span class="tlink" data-team="${esc(opp)}">${fl(opp)} ${esc(opp)}</span>${res}<span class="dt" style="width:100%;flex-basis:100%">${m.date} · <span class="vlink" data-venue="${esc(m.v)}">${esc(m.v)}</span>, ${esc(m.c)}</span></div>`;
+    else res=`<span class="res" style="color:var(--muted);font-weight:600">${localTime(m.gmt)}</span>`;
+    html+=`<div class="fixrow"><span>${home?'vs':'@'}</span><span class="tlink" data-team="${esc(opp)}">${fl(opp)} ${esc(opp)}</span>${res}<span class="dt" style="width:100%;flex-basis:100%">${localDayLabel(m.gmt)} · <span class="vlink" data-venue="${esc(m.v)}">${esc(m.v)}</span>, ${esc(m.c)}</span></div>`;
   });
   html+=`<div class="sec-h">Squad</div>`;
   if(sq){
@@ -980,7 +993,7 @@ function renderStatus(){
   else if(now>new Date('2026-07-19T21:00Z')) s='Tournament complete';
   else s='Group stage underway';
   document.getElementById('statusLine').textContent=s;
-  document.getElementById('nextLine').textContent=next?('Next: '+fl(next.h)+' '+next.h+' v '+next.a+' '+fl(next.a)):'';
+  document.getElementById('nextLine').textContent=next?('Next: '+fl(next.h)+' '+next.h+' v '+next.a+' '+fl(next.a)+' · '+localDayLabel(next.gmt)+', '+localTime(next.gmt)):'';
 }
 
 /* ---------- FILTERS / TABS ---------- */
