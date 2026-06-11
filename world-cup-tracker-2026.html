@@ -1,0 +1,1147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>World Cup 2026 Tracker</title>
+<style>
+:root{
+  color-scheme: light;
+  --bg:#f4f6f8; --card:#ffffff; --ink:#10221b; --muted:#5d6b66;
+  --line:#e3e8e6; --accent:#067a46; --accent2:#0a8f53; --accent-soft:#e6f4ec;
+  --gold:#c9a227; --live:#d92d20; --chip:#eef2f0;
+  --shadow:0 1px 3px rgba(16,34,27,.08),0 1px 2px rgba(16,34,27,.04);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:14px;line-height:1.45;}
+.wrap{max-width:1080px;margin:0 auto;padding:18px 16px 64px;}
+header.hero{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 18px;
+  padding:18px 20px;background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 60%,#0bbf6a 100%);
+  border-radius:16px;color:#fff;box-shadow:var(--shadow);}
+.hero h1{margin:0;font-size:23px;letter-spacing:-.3px;font-weight:800;}
+.hero .sub{font-size:12.5px;opacity:.92;margin-top:2px;}
+.hero .spacer{flex:1}
+.hero .meta{font-size:12px;opacity:.95;text-align:right;line-height:1.4}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0 4px;}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 13px;box-shadow:var(--shadow);}
+.kpi .n{font-size:20px;font-weight:800;color:var(--accent);}
+.kpi .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:1px;}
+nav.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 14px;position:sticky;top:0;
+  background:var(--bg);padding:8px 0;z-index:20;}
+.tab{border:1px solid var(--line);background:var(--card);color:var(--ink);
+  padding:7px 14px;border-radius:999px;font-weight:600;font-size:13px;cursor:pointer;}
+.tab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.panel{display:none;animation:fade .2s ease;}
+.panel.active{display:block;}
+@keyframes fade{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:14px 16px;margin-bottom:14px;}
+.card h3{margin:0 0 10px;font-size:15px;}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px;}
+select,input[type=text]{padding:7px 10px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font-size:13px;}
+.hint{font-size:12px;color:var(--muted);}
+/* clickable team */
+.tlink{cursor:pointer;border-bottom:1px dotted transparent;}
+.tlink:hover{color:var(--accent);border-bottom-color:var(--accent);}
+/* schedule */
+.daygroup{margin-bottom:6px;}
+.daygroup .dh{font-weight:800;font-size:13px;color:var(--accent);margin:14px 2px 7px;
+  border-bottom:2px solid var(--accent-soft);padding-bottom:4px;display:flex;justify-content:space-between;}
+.match{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;
+  padding:9px 12px;border:1px solid var(--line);border-radius:11px;background:var(--card);margin-bottom:7px;}
+.match.today{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft);}
+.m-home{justify-self:end;text-align:right;}
+.m-away{justify-self:start;text-align:left;}
+.m-team{font-weight:600;white-space:nowrap;}
+.m-team .fl{font-size:16px;}
+.m-center{text-align:center;min-width:104px;}
+.m-score{font-weight:800;font-size:16px;letter-spacing:1px;}
+.m-vs{color:var(--muted);font-weight:700;}
+.m-time{font-size:11px;color:var(--muted);}
+.m-venue{font-size:10.5px;color:var(--muted);margin-top:2px;}
+.badge{display:inline-block;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;
+  padding:2px 7px;border-radius:999px;vertical-align:middle;}
+.b-live{background:var(--live);color:#fff;}
+.b-ft{background:#e9edeb;color:var(--muted);}
+.b-grp{background:var(--accent-soft);color:var(--accent);}
+.gchip{font-size:10px;color:var(--muted);}
+/* groups */
+.groups-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+.gtitle{display:flex;align-items:center;gap:8px;margin:0 0 8px;font-size:14px;font-weight:800;}
+.gtitle .gl{background:var(--accent);color:#fff;width:24px;height:24px;border-radius:7px;display:grid;place-items:center;font-size:12px;}
+table.stand{width:100%;border-collapse:collapse;font-size:12.5px;}
+table.stand th,table.stand td{padding:5px 4px;text-align:center;border-bottom:1px solid var(--line);}
+table.stand th{color:var(--muted);font-weight:700;font-size:10.5px;text-transform:uppercase;}
+table.stand td.team{text-align:left;font-weight:600;white-space:nowrap;}
+table.stand tr.q1 td:first-child{box-shadow:inset 3px 0 0 var(--accent);}
+table.stand tr.q2 td:first-child{box-shadow:inset 3px 0 0 var(--gold);}
+.pts{font-weight:800;}
+.legend{font-size:11px;color:var(--muted);margin-top:8px;display:flex;gap:14px;flex-wrap:wrap;}
+.dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:middle;}
+/* teams */
+.teams-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.tcard{border:1px solid var(--line);border-radius:11px;padding:10px 12px;background:var(--card);}
+.tcard .gh{font-size:11px;color:var(--accent);font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.tcard .row{display:flex;align-items:center;gap:8px;padding:3px 0;font-weight:600;}
+.tcard .row .fl{font-size:17px;}
+.tcard .row .star{margin-left:auto;font-size:10px;color:var(--gold);}
+/* bracket */
+.bracket{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;overflow-x:auto;}
+.bcol{min-width:150px;}
+.bcol h4{font-size:12px;text-align:center;color:var(--accent);margin:0 0 8px;text-transform:uppercase;letter-spacing:.4px;}
+.bmatch{border:1px solid var(--line);border-radius:9px;padding:7px 9px;margin-bottom:8px;background:var(--card);font-size:11.5px;}
+.bmatch .slot{color:var(--muted);padding:2px 0;}
+.bmatch .dt{font-size:9.5px;color:var(--accent2);font-weight:700;margin-top:3px;}
+/* venues / stats */
+.venue-list{columns:2;column-gap:24px;font-size:12.5px;}
+.venue-list .v{break-inside:avoid;padding:4px 0;border-bottom:1px dashed var(--line);}
+.chart-box{position:relative;height:230px;}
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.chart-grid .card{margin-bottom:0;}
+@media(max-width:720px){.chart-grid{grid-template-columns:1fr;}}
+.liveinfo{font-size:11px;opacity:.95;margin-top:3px;display:flex;align-items:center;gap:6px;justify-content:flex-end;}
+.live-dot{width:8px;height:8px;border-radius:50%;background:#bbb;display:inline-block;flex:none;}
+.live-dot.on{background:#2ec26b;box-shadow:0 0 0 0 rgba(46,194,107,.7);animation:pulse 1.6s infinite;}
+.live-dot.err{background:#ffd27a;}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(46,194,107,.6)}70%{box-shadow:0 0 0 7px rgba(46,194,107,0)}100%{box-shadow:0 0 0 0 rgba(46,194,107,0)}}
+.m-clock{font-size:10px;color:var(--live);font-weight:800;}
+.scorer{display:flex;align-items:center;gap:9px;padding:6px 4px;border-bottom:1px solid var(--line);font-size:13px;}
+.scorer .rk{width:20px;color:var(--muted);font-weight:800;text-align:center;}
+.scorer .gg{margin-left:auto;font-weight:800;color:var(--accent);}
+.scorer .tm{font-size:11px;color:var(--muted);}
+@media(max-width:720px){.liveinfo{justify-content:flex-start;}}
+.livecard{border:1px solid var(--live);border-radius:14px;background:linear-gradient(180deg,#fff,#fff6f5);box-shadow:var(--shadow);padding:13px 15px;margin-bottom:12px;}
+.livecard .lh{display:flex;align-items:center;gap:8px;font-weight:800;font-size:12px;color:var(--live);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
+.livecard .lh .live-dot{background:var(--live);animation:pulse 1.6s infinite;}
+.lmatch{border-top:1px solid var(--line);padding-top:10px;margin-top:10px;}
+.lmatch:first-of-type{border-top:none;padding-top:0;margin-top:0;}
+.lscore{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-bottom:8px;}
+.lscore .nm{font-weight:700;}
+.lscore .nm.h{text-align:right;}
+.lscore .sc{font-size:20px;font-weight:800;letter-spacing:2px;}
+.lscore .mn{font-size:11px;color:var(--live);font-weight:800;text-align:center;}
+.feed{display:flex;flex-direction:column;gap:5px;max-height:190px;overflow-y:auto;}
+.fevent{display:flex;gap:9px;align-items:flex-start;font-size:12.5px;padding:4px 6px;border-radius:8px;background:#fafbfb;}
+.fevent .fc{font-weight:800;color:var(--accent);min-width:34px;flex:none;}
+.fevent .fi{flex:none;}
+.fevent .ft2{color:var(--ink);}
+.feed-empty{font-size:12px;color:var(--muted);font-style:italic;}
+.mapf{width:100%;border:1px solid var(--line);border-radius:10px;display:block;background:#eef2f0;}
+.ov-top{z-index:130;}
+.vlink{cursor:pointer;border-bottom:1px dotted transparent;}
+.vlink:hover{color:var(--accent);border-bottom-color:var(--accent);}
+.mapcap{font-size:11.5px;color:var(--muted);margin-top:7px;}
+.mapcap a{color:var(--accent);text-decoration:none;}
+.mapcap a:hover{text-decoration:underline;}
+.flag-host{font-size:13px;}
+.note{font-size:11.5px;color:var(--muted);background:var(--accent-soft);border-radius:10px;padding:9px 12px;margin-top:6px;}
+/* overlay */
+.ov-back{position:fixed;inset:0;background:rgba(16,34,27,.45);display:none;z-index:100;
+  align-items:flex-start;justify-content:center;padding:24px 14px;overflow-y:auto;}
+.ov-back.open{display:flex;}
+.ov{background:var(--card);border-radius:16px;max-width:640px;width:100%;box-shadow:0 18px 50px rgba(0,0,0,.25);
+  margin:auto;overflow:hidden;animation:pop .18s ease;}
+@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.99)}to{opacity:1;transform:none}}
+.ov-head{padding:16px 18px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;position:relative;}
+.ov-head .x{position:absolute;top:12px;right:14px;cursor:pointer;font-size:20px;line-height:1;opacity:.9;background:rgba(255,255,255,.18);border-radius:8px;width:30px;height:30px;display:grid;place-items:center;}
+.ov-head .x:hover{opacity:1;}
+.ov-head .back{position:absolute;top:14px;left:16px;cursor:pointer;font-size:12px;font-weight:700;opacity:.95;}
+.ov-title{font-size:21px;font-weight:800;display:flex;align-items:center;gap:10px;}
+.ov-title .fl{font-size:30px;}
+.ov-sub{font-size:12px;opacity:.92;margin-top:3px;}
+.ov-body{padding:16px 18px;max-height:64vh;overflow-y:auto;}
+.statgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
+.statgrid.six{grid-template-columns:repeat(3,1fr);}
+.stat{background:var(--accent-soft);border-radius:10px;padding:9px 6px;text-align:center;}
+.stat .v{font-size:18px;font-weight:800;color:var(--accent);}
+.stat .k{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}
+.form{display:flex;gap:5px;align-items:center;margin:2px 0 14px;flex-wrap:wrap;}
+.fpill{width:22px;height:22px;border-radius:6px;color:#fff;font-weight:800;font-size:11px;display:grid;place-items:center;}
+.fW{background:var(--accent);}.fD{background:#9aa6a1;}.fL{background:var(--live);}
+.sec-h{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:14px 0 8px;}
+.fixrow{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--line);border-radius:9px;margin-bottom:6px;font-size:12.5px;}
+.fixrow .res{margin-left:auto;font-weight:800;}
+.fixrow .dt{color:var(--muted);font-size:11px;}
+.posgroup{margin-bottom:10px;}
+.posgroup .ph{font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin:8px 0 5px;}
+.prow{display:flex;align-items:center;gap:10px;padding:7px 9px;border:1px solid var(--line);border-radius:9px;margin-bottom:5px;cursor:pointer;}
+.prow:hover{border-color:var(--accent);background:var(--accent-soft);}
+.prow .num{width:24px;text-align:center;font-weight:800;color:var(--muted);font-size:12px;flex:none;}
+.prow .pn{font-weight:600;}
+.prow .club{margin-left:auto;font-size:11.5px;color:var(--muted);text-align:right;}
+.prow .arr{color:var(--accent);font-weight:800;flex:none;}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin:6px 0 12px;}
+.chip{background:var(--chip);border-radius:999px;padding:5px 11px;font-size:12px;font-weight:600;}
+.chip b{color:var(--accent);}
+.ph-note{font-size:12.5px;color:var(--muted);background:var(--accent-soft);border-radius:10px;padding:12px 14px;}
+@media(max-width:720px){
+  .kpis{grid-template-columns:repeat(2,1fr);}
+  .groups-grid{grid-template-columns:1fr;}
+  .teams-grid{grid-template-columns:1fr;}
+  .venue-list{columns:1;}
+  .hero .meta{text-align:left;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div>
+      <h1>⚽ FIFA World Cup 2026 — Live Tracker</h1>
+      <div class="sub">Canada · Mexico · United States — 48 teams · 104 matches</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="meta">
+      <div id="statusLine">Tournament status</div>
+      <div id="nextLine"></div>
+      <div id="liveInfo" class="liveinfo"><span class="live-dot" id="liveDot"></span><span id="liveText">Connecting to live data…</span></div>
+    </div>
+  </header>
+
+  <div class="kpis">
+    <div class="kpi"><div class="n">48</div><div class="l">Teams</div></div>
+    <div class="kpi"><div class="n">104</div><div class="l">Matches</div></div>
+    <div class="kpi"><div class="n">16</div><div class="l">Host Cities</div></div>
+    <div class="kpi"><div class="n" id="kpiPlayed">0</div><div class="l">Played</div></div>
+  </div>
+
+  <nav class="tabs" id="tabs">
+    <div class="tab active" data-p="schedule">Schedule</div>
+    <div class="tab" data-p="groups">Groups &amp; Standings</div>
+    <div class="tab" data-p="teams">Teams</div>
+    <div class="tab" data-p="bracket">Knockout</div>
+    <div class="tab" data-p="stats">Stats &amp; Venues</div>
+  </nav>
+
+  <div class="note" style="margin:0 0 14px">💡 Tap any <b>team name</b> anywhere to open its profile — tournament stats, fixtures and full roster. Then tap a <b>player</b> for their profile and stats.</div>
+
+  <!-- SCHEDULE -->
+  <section class="panel active" id="schedule">
+    <div id="liveNow"></div>
+    <div class="card">
+      <div class="controls">
+        <label class="hint">Group
+          <select id="fGroup"><option value="">All groups</option></select>
+        </label>
+        <label class="hint">Team
+          <select id="fTeam"><option value="">All teams</option></select>
+        </label>
+        <label class="hint"><input type="checkbox" id="fUpcoming"> Upcoming only</label>
+        <span class="hint" id="schedCount"></span>
+      </div>
+      <div id="scheduleBody"></div>
+    </div>
+  </section>
+
+  <!-- GROUPS -->
+  <section class="panel" id="groups">
+    <div class="card">
+      <h3>Group standings</h3>
+      <div class="legend">
+        <span><span class="dot" style="background:var(--accent)"></span>Top 2 — qualify for Round of 32</span>
+        <span><span class="dot" style="background:var(--gold)"></span>2nd place</span>
+        <span>Best 8 of 12 third-placed teams also advance</span>
+      </div>
+      <div class="note">Standings update automatically from match results. The group stage runs June 11–27; tables are level until results come in.</div>
+    </div>
+    <div class="groups-grid" id="groupsGrid"></div>
+  </section>
+
+  <!-- TEAMS -->
+  <section class="panel" id="teams">
+    <div class="card"><h3>All 48 teams by group</h3>
+      <div class="hint" style="margin-bottom:10px">★ = detailed roster available. Click any team.</div>
+      <div class="teams-grid" id="teamsGrid"></div>
+    </div>
+  </section>
+
+  <!-- BRACKET -->
+  <section class="panel" id="bracket">
+    <div class="card">
+      <h3>Knockout stage</h3>
+      <div class="hint">Round of 32 → Round of 16 → Quarterfinals → Semifinals → Final. Matchups are filled once group placings are decided.</div>
+    </div>
+    <div class="card"><div class="bracket" id="bracketBox"></div></div>
+    <div class="card">
+      <h3>Key knockout dates</h3>
+      <div id="koDates" class="hint"></div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section class="panel" id="stats">
+    <div class="kpis" style="margin-top:0">
+      <div class="kpi"><div class="n" id="kpiPlayers">0</div><div class="l">Players</div></div>
+      <div class="kpi"><div class="n" id="kpiGoals">0</div><div class="l">Goals scored</div></div>
+      <div class="kpi"><div class="n" id="kpiClubs">0</div><div class="l">Clubs represented</div></div>
+      <div class="kpi"><div class="n">23</div><div class="l">Edition</div></div>
+    </div>
+    <div class="card">
+      <h3>Top scorers — Golden Boot race</h3>
+      <div id="scorers" class="hint">No goals recorded yet — the race begins with the opening matches. As results are entered, scorers rank here.</div>
+    </div>
+    <div class="chart-grid">
+      <div class="card">
+        <h3>Matches by host nation</h3>
+        <div class="chart-box"><canvas id="nationChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Past World Cup titles (2026 teams)</h3>
+        <div class="chart-box"><canvas id="titlesChart"></canvas></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Matches by host city (group stage)</h3>
+      <div class="chart-box"><canvas id="cityChart"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Clubs supplying the most players (all 48 squads)</h3>
+      <div class="chart-box" style="height:300px"><canvas id="clubsChart"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Host venues (16)</h3>
+      <div class="venue-list" id="venueList"></div>
+    </div>
+  </section>
+</div>
+
+<!-- OVERLAY -->
+<div class="ov-back" id="ovBack">
+  <div class="ov">
+    <div class="ov-head">
+      <span class="back" id="ovBackBtn" style="display:none">‹ Back to team</span>
+      <span class="x" id="ovClose">×</span>
+      <div class="ov-title" id="ovTitle"></div>
+      <div class="ov-sub" id="ovSub"></div>
+    </div>
+    <div class="ov-body" id="ovBody"></div>
+  </div>
+</div>
+
+<!-- VENUE MAP OVERLAY -->
+<div class="ov-back ov-top" id="venueBack">
+  <div class="ov" style="max-width:560px">
+    <div class="ov-head">
+      <span class="x" id="venueClose">×</span>
+      <div class="ov-title" id="venueTitle"></div>
+      <div class="ov-sub" id="venueSub"></div>
+    </div>
+    <div class="ov-body" id="venueBody"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<script>
+/* ---------- DATA ---------- */
+const FLAG={
+ "Mexico":"🇲🇽","South Africa":"🇿🇦","South Korea":"🇰🇷","Czechia":"🇨🇿",
+ "Canada":"🇨🇦","Bosnia":"🇧🇦","Qatar":"🇶🇦","Switzerland":"🇨🇭",
+ "Brazil":"🇧🇷","Morocco":"🇲🇦","Haiti":"🇭🇹","Scotland":"🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+ "USA":"🇺🇸","Paraguay":"🇵🇾","Australia":"🇦🇺","Turkiye":"🇹🇷",
+ "Germany":"🇩🇪","Curacao":"🇨🇼","Ivory Coast":"🇨🇮","Ecuador":"🇪🇨",
+ "Netherlands":"🇳🇱","Japan":"🇯🇵","Sweden":"🇸🇪","Tunisia":"🇹🇳",
+ "Belgium":"🇧🇪","Egypt":"🇪🇬","Iran":"🇮🇷","New Zealand":"🇳🇿",
+ "Spain":"🇪🇸","Cape Verde":"🇨🇻","Saudi Arabia":"🇸🇦","Uruguay":"🇺🇾",
+ "France":"🇫🇷","Senegal":"🇸🇳","Iraq":"🇮🇶","Norway":"🇳🇴",
+ "Argentina":"🇦🇷","Algeria":"🇩🇿","Austria":"🇦🇹","Jordan":"🇯🇴",
+ "Portugal":"🇵🇹","DR Congo":"🇨🇩","Uzbekistan":"🇺🇿","Colombia":"🇨🇴",
+ "England":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Croatia":"🇭🇷","Ghana":"🇬🇭","Panama":"🇵🇦"
+};
+const GROUPS={
+ A:["Mexico","South Africa","South Korea","Czechia"],
+ B:["Canada","Bosnia","Qatar","Switzerland"],
+ C:["Brazil","Morocco","Haiti","Scotland"],
+ D:["USA","Paraguay","Australia","Turkiye"],
+ E:["Germany","Curacao","Ivory Coast","Ecuador"],
+ F:["Netherlands","Japan","Sweden","Tunisia"],
+ G:["Belgium","Egypt","Iran","New Zealand"],
+ H:["Spain","Cape Verde","Saudi Arabia","Uruguay"],
+ I:["France","Senegal","Iraq","Norway"],
+ J:["Argentina","Algeria","Austria","Jordan"],
+ K:["Portugal","DR Congo","Uzbekistan","Colombia"],
+ L:["England","Croatia","Ghana","Panama"]
+};
+const TEAM_GROUP={};
+Object.entries(GROUPS).forEach(([g,ts])=>ts.forEach(t=>TEAM_GROUP[t]=g));
+
+const M=(date,gmt,h,a,local,v,c)=>({date,gmt,h,a,local,v,c,hs:null,as:null});
+const MATCHES=[
+ M("Thu, Jun 11","2026-06-11T19:00Z","Mexico","South Africa","1pm CST","Mexico City Stadium","Mexico City"),
+ M("Thu, Jun 11","2026-06-12T02:00Z","South Korea","Czechia","8pm CST","Estadio Guadalajara","Zapopan"),
+ M("Fri, Jun 12","2026-06-12T19:00Z","Canada","Bosnia","3pm ET","Toronto Stadium","Toronto"),
+ M("Fri, Jun 12","2026-06-13T01:00Z","USA","Paraguay","6pm PT","Los Angeles Stadium","Los Angeles"),
+ M("Sat, Jun 13","2026-06-13T19:00Z","Qatar","Switzerland","12pm PT","SF Bay Area Stadium","San Francisco"),
+ M("Sat, Jun 13","2026-06-13T22:00Z","Brazil","Morocco","6pm ET","New York New Jersey Stadium","New Jersey"),
+ M("Sat, Jun 13","2026-06-14T01:00Z","Haiti","Scotland","9pm ET","Boston Stadium","Boston"),
+ M("Sat, Jun 13","2026-06-14T04:00Z","Australia","Turkiye","6pm PT","BC Place","Vancouver"),
+ M("Sun, Jun 14","2026-06-14T17:00Z","Germany","Curacao","12pm CDT","Houston Stadium","Houston"),
+ M("Sun, Jun 14","2026-06-14T20:00Z","Netherlands","Japan","3pm CDT","Dallas Stadium","Dallas"),
+ M("Sun, Jun 14","2026-06-14T23:00Z","Ivory Coast","Ecuador","7pm ET","Philadelphia Stadium","Philadelphia"),
+ M("Sun, Jun 14","2026-06-15T02:00Z","Sweden","Tunisia","8pm CST","Estadio Monterrey","Guadalupe"),
+ M("Mon, Jun 15","2026-06-15T16:00Z","Spain","Cape Verde","12pm ET","Atlanta Stadium","Atlanta"),
+ M("Mon, Jun 15","2026-06-15T19:00Z","Belgium","Egypt","12pm PT","BC Place","Vancouver"),
+ M("Mon, Jun 15","2026-06-15T22:00Z","Saudi Arabia","Uruguay","6pm ET","Miami Stadium","Miami"),
+ M("Mon, Jun 15","2026-06-16T01:00Z","Iran","New Zealand","6pm PT","Los Angeles Stadium","Los Angeles"),
+ M("Tue, Jun 16","2026-06-16T19:00Z","France","Senegal","3pm ET","New York New Jersey Stadium","New Jersey"),
+ M("Tue, Jun 16","2026-06-16T22:00Z","Iraq","Norway","6pm ET","Boston Stadium","Boston"),
+ M("Tue, Jun 16","2026-06-17T01:00Z","Argentina","Algeria","8pm CDT","Kansas City Stadium","Kansas City"),
+ M("Tue, Jun 16","2026-06-17T04:00Z","Austria","Jordan","9pm PT","SF Bay Area Stadium","San Francisco"),
+ M("Wed, Jun 17","2026-06-17T17:00Z","Portugal","DR Congo","12pm CDT","Houston Stadium","Houston"),
+ M("Wed, Jun 17","2026-06-17T20:00Z","England","Croatia","3pm CDT","Dallas Stadium","Dallas"),
+ M("Wed, Jun 17","2026-06-17T23:00Z","Ghana","Panama","7pm ET","Toronto Stadium","Toronto"),
+ M("Wed, Jun 17","2026-06-18T02:00Z","Uzbekistan","Colombia","8pm CST","Mexico City Stadium","Mexico City"),
+ M("Thu, Jun 18","2026-06-18T16:00Z","Czechia","South Africa","12pm ET","Atlanta Stadium","Atlanta"),
+ M("Thu, Jun 18","2026-06-18T19:00Z","Switzerland","Bosnia","12pm PT","Los Angeles Stadium","Los Angeles"),
+ M("Thu, Jun 18","2026-06-18T22:00Z","Canada","Qatar","3pm PT","BC Place","Vancouver"),
+ M("Thu, Jun 18","2026-06-19T01:00Z","Mexico","South Korea","7pm CST","Estadio Guadalajara","Zapopan"),
+ M("Fri, Jun 19","2026-06-19T22:00Z","Scotland","Morocco","6pm ET","Boston Stadium","Boston"),
+ M("Fri, Jun 19","2026-06-19T19:00Z","USA","Australia","12pm PT","Seattle Stadium","Seattle"),
+ M("Fri, Jun 19","2026-06-20T00:30Z","Brazil","Haiti","8:30pm ET","Philadelphia Stadium","Philadelphia"),
+ M("Fri, Jun 19","2026-06-20T03:00Z","Turkiye","Paraguay","9pm PT","SF Bay Area Stadium","San Francisco"),
+ M("Sat, Jun 20","2026-06-20T17:00Z","Netherlands","Sweden","12pm CDT","Houston Stadium","Houston"),
+ M("Sat, Jun 20","2026-06-20T20:00Z","Germany","Ivory Coast","4pm ET","Toronto Stadium","Toronto"),
+ M("Sat, Jun 20","2026-06-21T03:00Z","Ecuador","Curacao","7pm CDT","Kansas City Stadium","Kansas City"),
+ M("Sat, Jun 20","2026-06-21T04:00Z","Tunisia","Japan","10pm CST","Estadio Monterrey","Guadalupe"),
+ M("Sun, Jun 21","2026-06-21T16:00Z","Spain","Saudi Arabia","12pm ET","Atlanta Stadium","Atlanta"),
+ M("Sun, Jun 21","2026-06-21T19:00Z","Belgium","Iran","12pm PT","Los Angeles Stadium","Los Angeles"),
+ M("Sun, Jun 21","2026-06-21T22:00Z","Uruguay","Cape Verde","6pm ET","Miami Stadium","Miami"),
+ M("Sun, Jun 21","2026-06-22T01:00Z","New Zealand","Egypt","6pm PT","BC Place","Vancouver"),
+ M("Mon, Jun 22","2026-06-22T17:00Z","Argentina","Austria","12pm CDT","Dallas Stadium","Dallas"),
+ M("Mon, Jun 22","2026-06-22T21:00Z","France","Iraq","5pm ET","Philadelphia Stadium","Philadelphia"),
+ M("Mon, Jun 22","2026-06-23T00:00Z","Norway","Senegal","8pm ET","New York New Jersey Stadium","New Jersey"),
+ M("Mon, Jun 22","2026-06-23T03:00Z","Jordan","Algeria","8pm PT","SF Bay Area Stadium","San Francisco"),
+ M("Tue, Jun 23","2026-06-23T17:00Z","Portugal","Uzbekistan","12pm CDT","Houston Stadium","Houston"),
+ M("Tue, Jun 23","2026-06-23T20:00Z","England","Ghana","4pm ET","Boston Stadium","Boston"),
+ M("Tue, Jun 23","2026-06-23T23:00Z","Panama","Croatia","7pm ET","Toronto Stadium","Toronto"),
+ M("Tue, Jun 23","2026-06-24T02:00Z","Colombia","DR Congo","8pm CST","Estadio Guadalajara","Zapopan"),
+ M("Wed, Jun 24","2026-06-24T19:00Z","Switzerland","Canada","12pm PT","BC Place","Vancouver"),
+ M("Wed, Jun 24","2026-06-24T19:00Z","Bosnia","Qatar","12pm PT","Seattle Stadium","Seattle"),
+ M("Wed, Jun 24","2026-06-24T22:00Z","Scotland","Brazil","6pm ET","Miami Stadium","Miami"),
+ M("Wed, Jun 24","2026-06-24T22:00Z","Morocco","Haiti","6pm ET","Atlanta Stadium","Atlanta"),
+ M("Wed, Jun 24","2026-06-25T01:00Z","Czechia","Mexico","7pm CST","Mexico City Stadium","Mexico City"),
+ M("Wed, Jun 24","2026-06-25T01:00Z","South Africa","South Korea","7pm CST","Estadio Monterrey","Guadalupe"),
+ M("Thu, Jun 25","2026-06-25T20:00Z","Ecuador","Germany","4pm ET","New York New Jersey Stadium","New Jersey"),
+ M("Thu, Jun 25","2026-06-25T20:00Z","Curacao","Ivory Coast","4pm ET","Philadelphia Stadium","Philadelphia"),
+ M("Thu, Jun 25","2026-06-25T23:00Z","Japan","Sweden","6pm CDT","Dallas Stadium","Dallas"),
+ M("Thu, Jun 25","2026-06-25T23:00Z","Tunisia","Netherlands","6pm CDT","Kansas City Stadium","Kansas City"),
+ M("Thu, Jun 25","2026-06-26T02:00Z","Turkiye","USA","7pm PT","Los Angeles Stadium","Los Angeles"),
+ M("Thu, Jun 25","2026-06-26T02:00Z","Paraguay","Australia","7pm PT","SF Bay Area Stadium","San Francisco"),
+ M("Fri, Jun 26","2026-06-26T19:00Z","Norway","France","3pm ET","Boston Stadium","Boston"),
+ M("Fri, Jun 26","2026-06-26T19:00Z","Senegal","Iraq","3pm ET","Toronto Stadium","Toronto"),
+ M("Fri, Jun 26","2026-06-27T00:00Z","Cape Verde","Saudi Arabia","7pm CDT","Houston Stadium","Houston"),
+ M("Fri, Jun 26","2026-06-27T00:00Z","Uruguay","Spain","6pm CST","Estadio Guadalajara","Zapopan"),
+ M("Fri, Jun 26","2026-06-27T03:00Z","Egypt","Iran","8pm PT","Seattle Stadium","Seattle"),
+ M("Fri, Jun 26","2026-06-27T03:00Z","New Zealand","Belgium","8pm PT","BC Place","Vancouver"),
+ M("Sat, Jun 27","2026-06-27T21:00Z","Panama","England","5pm ET","New York New Jersey Stadium","New Jersey"),
+ M("Sat, Jun 27","2026-06-27T21:00Z","Croatia","Ghana","5pm ET","Philadelphia Stadium","Philadelphia"),
+ M("Sat, Jun 27","2026-06-27T23:30Z","Colombia","Portugal","7:30pm ET","Miami Stadium","Miami"),
+ M("Sat, Jun 27","2026-06-27T23:30Z","DR Congo","Uzbekistan","7:30pm ET","Atlanta Stadium","Atlanta"),
+ M("Sat, Jun 27","2026-06-28T02:00Z","Algeria","Austria","9pm CDT","Kansas City Stadium","Kansas City"),
+ M("Sat, Jun 27","2026-06-28T02:00Z","Jordan","Argentina","9pm CDT","Dallas Stadium","Dallas")
+];
+
+const VENUES=[
+ ["Los Angeles Stadium","Los Angeles","USA"],["SF Bay Area Stadium","San Francisco","USA"],
+ ["New York New Jersey Stadium","New Jersey","USA"],["Boston Stadium","Boston","USA"],
+ ["Houston Stadium","Houston","USA"],["Dallas Stadium","Dallas","USA"],
+ ["Philadelphia Stadium","Philadelphia","USA"],["Atlanta Stadium","Atlanta","USA"],
+ ["Miami Stadium","Miami","USA"],["Kansas City Stadium","Kansas City","USA"],
+ ["Seattle Stadium","Seattle","USA"],["Toronto Stadium","Toronto","Canada"],
+ ["BC Place","Vancouver","Canada"],["Mexico City Stadium","Mexico City","Mexico"],
+ ["Estadio Guadalajara","Zapopan","Mexico"],["Estadio Monterrey","Guadalupe","Mexico"]
+];
+const KO_DATES=[
+ ["Round of 32","June 28 – July 3"],["Round of 16","July 4 – 7"],
+ ["Quarterfinals","July 9 – 11"],["Semifinals","July 14 – 15"],
+ ["Bronze medal match","July 18 — Miami Stadium"],["Final","July 19 — New York New Jersey Stadium, 3pm ET"]
+];
+
+/* Team home base — [lat, lon, place] (capital / representative city) */
+const COORDS={
+ "Mexico":[19.4326,-99.1332,"Mexico City"],"South Africa":[-25.7479,28.2293,"Pretoria"],"South Korea":[37.5665,126.978,"Seoul"],"Czechia":[50.0755,14.4378,"Prague"],
+ "Canada":[45.4215,-75.6972,"Ottawa"],"Bosnia":[43.8563,18.4131,"Sarajevo"],"Qatar":[25.2854,51.531,"Doha"],"Switzerland":[46.948,7.4474,"Bern"],
+ "Brazil":[-15.7939,-47.8828,"Brasília"],"Morocco":[34.0209,-6.8417,"Rabat"],"Haiti":[18.5944,-72.3074,"Port-au-Prince"],"Scotland":[55.9533,-3.1883,"Edinburgh"],
+ "USA":[38.9072,-77.0369,"Washington, D.C."],"Paraguay":[-25.2637,-57.5759,"Asunción"],"Australia":[-35.2809,149.13,"Canberra"],"Turkiye":[39.9334,32.8597,"Ankara"],
+ "Germany":[52.52,13.405,"Berlin"],"Curacao":[12.1224,-68.8824,"Willemstad"],"Ivory Coast":[5.3599,-4.0083,"Abidjan"],"Ecuador":[-0.1807,-78.4678,"Quito"],
+ "Netherlands":[52.3676,4.9041,"Amsterdam"],"Japan":[35.6762,139.6503,"Tokyo"],"Sweden":[59.3293,18.0686,"Stockholm"],"Tunisia":[36.8065,10.1815,"Tunis"],
+ "Belgium":[50.8503,4.3517,"Brussels"],"Egypt":[30.0444,31.2357,"Cairo"],"Iran":[35.6892,51.389,"Tehran"],"New Zealand":[-41.2865,174.7762,"Wellington"],
+ "Spain":[40.4168,-3.7038,"Madrid"],"Cape Verde":[14.933,-23.5133,"Praia"],"Saudi Arabia":[24.7136,46.6753,"Riyadh"],"Uruguay":[-34.9011,-56.1645,"Montevideo"],
+ "France":[48.8566,2.3522,"Paris"],"Senegal":[14.7167,-17.4677,"Dakar"],"Iraq":[33.3152,44.3661,"Baghdad"],"Norway":[59.9139,10.7522,"Oslo"],
+ "Argentina":[-34.6037,-58.3816,"Buenos Aires"],"Algeria":[36.7538,3.0588,"Algiers"],"Austria":[48.2082,16.3738,"Vienna"],"Jordan":[31.9454,35.9284,"Amman"],
+ "Portugal":[38.7223,-9.1393,"Lisbon"],"DR Congo":[-4.4419,15.2663,"Kinshasa"],"Uzbekistan":[41.2995,69.2401,"Tashkent"],"Colombia":[4.711,-74.0721,"Bogotá"],
+ "England":[51.5072,-0.1276,"London"],"Croatia":[45.815,15.9819,"Zagreb"],"Ghana":[5.6037,-0.187,"Accra"],"Panama":[8.9824,-79.5199,"Panama City"]
+};
+/* Stadium geo — [lat, lon] (tournament venue → actual stadium) */
+const VENUE_GEO={
+ "Los Angeles Stadium":[33.9535,-118.3392],"SF Bay Area Stadium":[37.403,-121.9698],"New York New Jersey Stadium":[40.8135,-74.0745],
+ "Boston Stadium":[42.0909,-71.2643],"Houston Stadium":[29.6847,-95.4107],"Dallas Stadium":[32.7473,-97.0945],
+ "Philadelphia Stadium":[39.9008,-75.1675],"Atlanta Stadium":[33.7554,-84.4008],"Miami Stadium":[25.958,-80.2389],
+ "Kansas City Stadium":[39.0489,-94.4839],"Seattle Stadium":[47.5952,-122.3316],"Toronto Stadium":[43.6332,-79.4185],
+ "BC Place":[49.2768,-123.1119],"Mexico City Stadium":[19.3029,-99.1505],"Estadio Guadalajara":[20.6819,-103.4625],"Estadio Monterrey":[25.6692,-100.2447]
+};
+function mapFrame(lat,lon,d,h){
+  const bbox=[(lon-d).toFixed(4),(lat-d).toFixed(4),(lon+d).toFixed(4),(lat+d).toFixed(4)].join('%2C');
+  return `<iframe class="mapf" style="height:${h||170}px" loading="lazy" referrerpolicy="no-referrer" src="https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat}%2C${lon}"></iframe>`;
+}
+function osmLink(lat,lon,z){return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=${z||14}/${lat}/${lon}`;}
+
+/* ---------- SQUADS (12 contenders) ----------
+   p(num, pos, name, club, age?, caps?)  -> {n,pos,name,club,age,caps,g:0,a:0}
+*/
+const p=(n,pos,name,club,age=null,caps=null)=>({n,pos,name,club,age,caps,g:0,a:0});
+const SQUADS={};
+SQUADS["Brazil"]={coach:"Carlo Ancelotti",src:"wiki",players:[
+ p(1,"GK","Alisson","Liverpool",33,77),p(12,"GK","Weverton","Grêmio",38,10),p(23,"GK","Ederson","Fenerbahçe",32,32),
+ p(2,"DF","Wesley","Roma",22,7),p(3,"DF","Gabriel Magalhães","Arsenal",28,17),p(4,"DF","Marquinhos","Paris Saint-Germain",32,104),p(6,"DF","Alex Sandro","Flamengo",35,44),p(13,"DF","Danilo","Flamengo",34,69),p(14,"DF","Bremer","Juventus",29,7),p(15,"DF","Léo Pereira","Flamengo",30,3),p(16,"DF","Douglas Santos","Zenit",32,6),p(24,"DF","Roger Ibañez","Al-Ahli",27,6),
+ p(5,"MF","Casemiro","Manchester United",34,85),p(8,"MF","Bruno Guimarães","Newcastle United",28,42),p(17,"MF","Fabinho","Al-Ittihad",32,32),p(18,"MF","Danilo","Botafogo",25,3),p(20,"MF","Lucas Paquetá","Flamengo",28,62),
+ p(7,"FW","Vinícius Júnior","Real Madrid",25,48),p(9,"FW","Matheus Cunha","Manchester United",27,22),p(10,"FW","Neymar","Santos",34,128),p(11,"FW","Raphinha","Barcelona",29,38),p(19,"FW","Endrick","Lyon",19,16),p(21,"FW","Luiz Henrique","Zenit",25,14),p(22,"FW","Gabriel Martinelli","Arsenal",24,22),p(25,"FW","Igor Thiago","Brentford",24,3),p(26,"FW","Rayan","Bournemouth",19,2)
+]};
+SQUADS["USA"]={coach:"Mauricio Pochettino",src:"wiki",players:[
+ p(1,"GK","Matt Turner","New England Revolution",31,54),p(24,"GK","Matt Freese","New York City FC",27,14),p(25,"GK","Chris Brady","Chicago Fire",22,1),
+ p(2,"DF","Sergiño Dest","PSV Eindhoven",25,38),p(3,"DF","Chris Richards","Crystal Palace",26,36),p(5,"DF","Antonee Robinson","Fulham",28,53),p(6,"DF","Auston Trusty","Celtic",27,7),p(12,"DF","Miles Robinson","FC Cincinnati",29,39),p(13,"DF","Tim Ream","Charlotte FC",38,81),p(16,"DF","Alex Freeman","Villarreal",21,16),p(22,"DF","Mark McKenzie","Toulouse",27,28),p(23,"DF","Joe Scally","Borussia Mönchengladbach",23,25),
+ p(4,"MF","Tyler Adams","Bournemouth",27,53),p(7,"MF","Giovanni Reyna","Borussia Mönchengladbach",23,37),p(8,"MF","Weston McKennie","Juventus",27,65),p(14,"MF","Sebastian Berhalter","Vancouver Whitecaps",25,12),p(15,"MF","Cristian Roldan","Seattle Sounders",31,46),p(17,"MF","Malik Tillman","Bayer Leverkusen",24,29),p(18,"MF","Maximilian Arfsten","Columbus Crew",25,19),
+ p(9,"FW","Ricardo Pepi","PSV Eindhoven",23,36),p(10,"FW","Christian Pulisic","Milan",27,85),p(11,"FW","Brenden Aaronson","Leeds United",25,57),p(19,"FW","Haji Wright","Coventry City",28,20),p(20,"FW","Folarin Balogun","Monaco",24,26),p(21,"FW","Timothy Weah","Marseille",26,50),p(26,"FW","Alejandro Zendejas","América",28,14)
+]};
+SQUADS["Germany"]={coach:"Julian Nagelsmann",src:"wiki",players:[
+ p(1,"GK","Manuel Neuer","Bayern Munich",40,124),p(12,"GK","Oliver Baumann","Hoffenheim",36,12),p(21,"GK","Alexander Nübel","VfB Stuttgart",29,3),
+ p(2,"DF","Antonio Rüdiger","Real Madrid",33,82),p(3,"DF","Waldemar Anton","Borussia Dortmund",29,12),p(4,"DF","Jonathan Tah","Bayern Munich",30,46),p(15,"DF","Nico Schlotterbeck","Borussia Dortmund",26,26),p(18,"DF","Nathaniel Brown","Eintracht Frankfurt",22,4),p(22,"DF","David Raum","RB Leipzig",28,36),p(24,"DF","Malick Thiaw","Newcastle United",24,5),
+ p(5,"MF","Aleksandar Pavlović","Bayern Munich",22,10),p(6,"MF","Joshua Kimmich","Bayern Munich",31,109),p(8,"MF","Leon Goretzka","Bayern Munich",31,69),p(9,"MF","Jamie Leweling","VfB Stuttgart",25,4),p(10,"MF","Jamal Musiala","Bayern Munich",23,41),p(13,"MF","Pascal Groß","Brighton",34,18),p(16,"MF","Angelo Stiller","VfB Stuttgart",25,7),p(17,"MF","Florian Wirtz","Liverpool",23,40),p(19,"MF","Leroy Sané","Galatasaray",30,75),p(20,"MF","Nadiem Amiri","Mainz 05",29,10),p(23,"MF","Felix Nmecha","Borussia Dortmund",25,7),p(25,"MF","Lennart Karl","Bayern Munich",18,3),
+ p(7,"FW","Kai Havertz","Arsenal",27,57),p(11,"FW","Nick Woltemade","Newcastle United",24,11),p(14,"FW","Maximilian Beier","Borussia Dortmund",23,8),p(26,"FW","Deniz Undav","VfB Stuttgart",29,8)
+]};
+SQUADS["Netherlands"]={coach:"Ronald Koeman",src:"wiki",players:[
+ p(null,"GK","Bart Verbruggen","Brighton",23,27),p(null,"GK","Mark Flekken","Bayer Leverkusen",32,11),p(null,"GK","Robin Roefs","Sunderland",23,0),
+ p(null,"DF","Virgil van Dijk","Liverpool",34,90),p(null,"DF","Denzel Dumfries","Inter Milan",30,71),p(null,"DF","Nathan Aké","Manchester City",31,58),p(null,"DF","Jurriën Timber","Arsenal",24,23),p(null,"DF","Micky van de Ven","Tottenham Hotspur",25,19),p(null,"DF","Mats Wieffer","Brighton",26,14),p(null,"DF","Jan Paul van Hecke","Brighton",26,10),p(null,"DF","Jorrel Hato","Chelsea",20,7),
+ p(null,"MF","Frenkie de Jong","Barcelona",29,64),p(null,"MF","Marten de Roon","Atalanta",35,42),p(null,"MF","Tijjani Reijnders","Manchester City",27,30),p(null,"MF","Teun Koopmeiners","Juventus",28,27),p(null,"MF","Ryan Gravenberch","Liverpool",24,25),p(null,"MF","Justin Kluivert","Bournemouth",27,11),p(null,"MF","Quinten Timber","Marseille",24,10),p(null,"MF","Guus Til","PSV Eindhoven",28,6),
+ p(null,"FW","Memphis Depay","Corinthians",32,108),p(null,"FW","Wout Weghorst","Ajax",33,51),p(null,"FW","Donyell Malen","Roma",27,51),p(null,"FW","Cody Gakpo","Liverpool",27,48),p(null,"FW","Noa Lang","Galatasaray",26,15),p(null,"FW","Brian Brobbey","Sunderland",24,10),p(null,"FW","Crysencio Summerville","West Ham United",24,0)
+]};
+SQUADS["Argentina"]={coach:"Lionel Scaloni",src:"f365",players:[
+ p(1,"GK","Juan Musso","Atlético Madrid"),p(12,"GK","Gerónimo Rulli","Marseille"),p(23,"GK","Emiliano Martínez","Aston Villa"),
+ p(2,"DF","Leonardo Balerdi","Marseille"),p(3,"DF","Nicolás Tagliafico","Lyon"),p(4,"DF","Gonzalo Montiel","River Plate"),p(6,"DF","Lisandro Martínez","Manchester United"),p(13,"DF","Cristian Romero","Tottenham Hotspur"),p(19,"DF","Nicolás Otamendi","Benfica"),p(25,"DF","Facundo Medina","Marseille"),p(26,"DF","Nahuel Molina","Atlético Madrid"),
+ p(5,"MF","Leandro Paredes","Boca Juniors"),p(7,"MF","Rodrigo De Paul","Inter Miami"),p(8,"MF","Valentín Barco","Strasbourg"),p(11,"MF","Giovani Lo Celso","Real Betis"),p(14,"MF","Exequiel Palacios","Bayer Leverkusen"),p(20,"MF","Alexis Mac Allister","Liverpool"),p(24,"MF","Enzo Fernández","Chelsea"),
+ p(9,"FW","Julián Álvarez","Atlético Madrid"),p(10,"FW","Lionel Messi","Inter Miami"),p(15,"FW","Nicolás González","Atlético Madrid"),p(16,"FW","Thiago Almada","Atlético Madrid"),p(17,"FW","Giuliano Simeone","Atlético Madrid"),p(18,"FW","Nico Paz","Como"),p(21,"FW","José Manuel López","Palmeiras"),p(22,"FW","Lautaro Martínez","Inter Milan")
+]};
+SQUADS["France"]={coach:"Didier Deschamps",src:"f365",players:[
+ p(1,"GK","Brice Samba","Rennes"),p(16,"GK","Mike Maignan","AC Milan"),p(23,"GK","Robin Risser","Lens"),
+ p(2,"DF","Malo Gusto","Chelsea"),p(3,"DF","Lucas Digne","Aston Villa"),p(4,"DF","Dayot Upamecano","Bayern Munich"),p(5,"DF","Jules Koundé","Barcelona"),p(15,"DF","Ibrahima Konaté","Liverpool"),p(17,"DF","William Saliba","Arsenal"),p(19,"DF","Théo Hernández","Al-Hilal"),p(21,"DF","Lucas Hernández","Paris Saint-Germain"),p(26,"DF","Maxence Lacroix","Crystal Palace"),
+ p(6,"MF","Manu Koné","Roma"),p(8,"MF","Aurélien Tchouaméni","Real Madrid"),p(13,"MF","N'Golo Kanté","Fenerbahçe"),p(14,"MF","Adrien Rabiot","AC Milan"),p(18,"MF","Warren Zaïre-Emery","Paris Saint-Germain"),
+ p(7,"FW","Ousmane Dembélé","Paris Saint-Germain"),p(9,"FW","Marcus Thuram","Inter Milan"),p(10,"FW","Kylian Mbappé","Real Madrid"),p(11,"FW","Michael Olise","Bayern Munich"),p(12,"FW","Bradley Barcola","Paris Saint-Germain"),p(20,"FW","Désiré Doué","Paris Saint-Germain"),p(22,"FW","Jean-Philippe Mateta","Crystal Palace"),p(24,"FW","Rayan Cherki","Manchester City"),p(25,"FW","Maghnes Akliouche","Monaco")
+]};
+SQUADS["Spain"]={coach:"Luis de la Fuente",src:"f365",players:[
+ p(1,"GK","David Raya","Arsenal"),p(13,"GK","Joan García","Barcelona"),p(23,"GK","Unai Simón","Athletic Bilbao"),
+ p(2,"DF","Marc Pubill","Atlético Madrid"),p(3,"DF","Álex Grimaldo","Bayer Leverkusen"),p(4,"DF","Eric García","Barcelona"),p(5,"DF","Marcos Llorente","Atlético Madrid"),p(12,"DF","Pedro Porro","Tottenham Hotspur"),p(14,"DF","Aymeric Laporte","Athletic Bilbao"),p(22,"DF","Pau Cubarsí","Barcelona"),p(24,"DF","Marc Cucurella","Chelsea"),
+ p(6,"MF","Mikel Merino","Arsenal"),p(8,"MF","Fabián Ruiz","Paris Saint-Germain"),p(9,"MF","Gavi","Barcelona"),p(10,"MF","Dani Olmo","Barcelona"),p(15,"MF","Álex Baena","Atlético Madrid"),p(16,"MF","Rodri","Manchester City"),p(18,"MF","Martín Zubimendi","Arsenal"),p(20,"MF","Pedri","Barcelona"),
+ p(7,"FW","Ferran Torres","Barcelona"),p(11,"FW","Yeremy Pino","Crystal Palace"),p(17,"FW","Nico Williams","Athletic Bilbao"),p(19,"FW","Lamine Yamal","Barcelona"),p(21,"FW","Mikel Oyarzabal","Real Sociedad"),p(25,"FW","Víctor Muñoz","Osasuna"),p(26,"FW","Borja Iglesias","Celta Vigo")
+]};
+SQUADS["Portugal"]={coach:"Roberto Martínez",src:"f365",players:[
+ p(1,"GK","Diogo Costa","Porto"),p(12,"GK","José Sá","Wolverhampton Wanderers"),p(22,"GK","Rui Silva","Sporting CP"),
+ p(2,"DF","Nélson Semedo","Fenerbahçe"),p(3,"DF","Rúben Dias","Manchester City"),p(20,"DF","João Cancelo","Barcelona"),p(null,"DF","Nuno Mendes","Paris Saint-Germain"),p(null,"DF","Diogo Dalot","Manchester United"),p(null,"DF","Gonçalo Inácio","Sporting CP"),p(null,"DF","Renato Veiga","Villarreal"),p(null,"DF","Tomás Araújo","Benfica"),
+ p(6,"MF","Matheus Nunes","Manchester City"),p(8,"MF","Bruno Fernandes","Manchester United"),p(10,"MF","Bernardo Silva","Manchester City"),p(15,"MF","João Neves","Paris Saint-Germain"),p(16,"MF","Francisco Trincão","Sporting CP"),p(21,"MF","Rúben Neves","Al-Hilal"),p(23,"MF","Vitinha","Paris Saint-Germain"),p(24,"MF","Samu Costa","Mallorca"),
+ p(7,"FW","Cristiano Ronaldo","Al-Nassr"),p(9,"FW","Gonçalo Ramos","Paris Saint-Germain"),p(11,"FW","João Félix","Al-Nassr"),p(17,"FW","Rafael Leão","Milan"),p(18,"FW","Pedro Neto","Chelsea"),p(19,"FW","Gonçalo Guedes","Real Sociedad"),p(26,"FW","Francisco Conceição","Juventus")
+]};
+SQUADS["England"]={coach:"Thomas Tuchel",src:"f365",players:[
+ p(1,"GK","Jordan Pickford","Everton"),p(null,"GK","Dean Henderson","Crystal Palace"),p(null,"GK","James Trafford","Manchester City"),
+ p(2,"DF","Ezri Konsa","Aston Villa"),p(3,"DF","Nico O'Reilly","Manchester City"),p(5,"DF","John Stones","Manchester City"),p(6,"DF","Marc Guéhi","Manchester City"),p(12,"DF","Tino Livramento","Newcastle United"),p(15,"DF","Dan Burn","Newcastle United"),p(24,"DF","Reece James","Chelsea"),p(25,"DF","Djed Spence","Tottenham Hotspur"),p(26,"DF","Jarell Quansah","Bayer Leverkusen"),
+ p(4,"MF","Declan Rice","Arsenal"),p(8,"MF","Elliot Anderson","Nottingham Forest"),p(10,"MF","Jude Bellingham","Real Madrid"),p(14,"MF","Jordan Henderson","Brentford"),p(16,"MF","Kobbie Mainoo","Manchester United"),p(17,"MF","Morgan Rogers","Aston Villa"),p(21,"MF","Eberechi Eze","Arsenal"),
+ p(7,"FW","Bukayo Saka","Arsenal"),p(9,"FW","Harry Kane","Bayern Munich"),p(11,"FW","Marcus Rashford","Barcelona"),p(18,"FW","Anthony Gordon","Newcastle United"),p(19,"FW","Ollie Watkins","Aston Villa"),p(20,"FW","Noni Madueke","Arsenal"),p(22,"FW","Ivan Toney","Al-Ahli")
+]};
+SQUADS["Croatia"]={coach:"Zlatko Dalić",src:"f365",players:[
+ p(1,"GK","Dominik Livaković","Dinamo Zagreb"),p(12,"GK","Ivor Pandur","Stoke City"),p(23,"GK","Dominik Kotarski","Copenhagen"),
+ p(2,"DF","Josip Stanišić","Bayern Munich"),p(3,"DF","Marin Pongračić","Fiorentina"),p(4,"DF","Joško Gvardiol","Manchester City"),p(5,"DF","Duje Ćaleta-Car","Real Sociedad"),p(6,"DF","Josip Šutalo","Ajax"),p(18,"DF","Kristijan Jakić","Augsburg"),p(22,"DF","Luka Vušković","Hamburg"),p(25,"DF","Martin Erlić","Midtjylland"),
+ p(7,"MF","Nikola Moro","Bologna"),p(8,"MF","Mateo Kovačić","Manchester City"),p(10,"MF","Luka Modrić","Milan"),p(13,"MF","Nikola Vlašić","Torino"),p(15,"MF","Mario Pašalić","Atalanta"),p(16,"MF","Martin Baturina","Como"),p(17,"MF","Petar Sučić","Inter Milan"),p(19,"MF","Toni Fruk","Rijeka"),p(21,"MF","Luka Sučić","Real Sociedad"),
+ p(null,"FW","Ivan Perišić","PSV Eindhoven"),p(null,"FW","Andrej Kramarić","Hoffenheim"),p(null,"FW","Ante Budimir","Osasuna"),p(24,"FW","Marco Pašalić","Orlando City"),p(null,"FW","Petar Musa","FC Dallas"),p(null,"FW","Igor Matanović","Freiburg")
+]};
+SQUADS["Uruguay"]={coach:"Marcelo Bielsa",src:"f365",players:[
+ p(1,"GK","Sergio Rochet","Internacional"),p(12,"GK","Santiago Mele","Monterrey"),p(23,"GK","Fernando Muslera","Estudiantes"),
+ p(2,"DF","José María Giménez","Atlético Madrid"),p(3,"DF","Sebastián Cáceres","América"),p(4,"DF","Ronald Araújo","Barcelona"),p(13,"DF","Guillermo Varela","Flamengo"),p(16,"DF","Mathías Olivera","Napoli"),p(17,"DF","Matías Viña","River Plate"),p(24,"DF","Santiago Bueno","Wolverhampton Wanderers"),
+ p(5,"MF","Manuel Ugarte","Manchester United"),p(6,"MF","Rodrigo Bentancur","Tottenham Hotspur"),p(7,"MF","Nicolás de la Cruz","Flamengo"),p(8,"MF","Federico Valverde","Real Madrid"),p(10,"MF","Giorgian de Arrascaeta","Flamengo"),p(14,"MF","Agustín Canobbio","Fluminense"),p(20,"MF","Maximiliano Araújo","Sporting CP"),p(22,"MF","Joaquín Piquerez","Palmeiras"),p(25,"MF","Juan Manuel Sanabria","Real Salt Lake"),p(26,"MF","Rodrigo Zalazar","Braga"),
+ p(9,"FW","Darwin Núñez","Al-Hilal"),p(11,"FW","Facundo Pellistri","Panathinaikos"),p(18,"FW","Brian Rodríguez","América"),p(19,"FW","Rodrigo Aguirre","UANL"),p(21,"FW","Federico Viñas","Oviedo")
+]};
+SQUADS["Belgium"]={coach:"Rudi Garcia",src:"f365",players:[
+ p(1,"GK","Thibaut Courtois","Real Madrid"),p(12,"GK","Senne Lammens","Manchester United"),p(13,"GK","Mike Penders","Strasbourg"),
+ p(2,"DF","Zeno Debast","Sporting CP"),p(3,"DF","Arthur Theate","Eintracht Frankfurt"),p(4,"DF","Brandon Mechele","Club Brugge"),p(5,"DF","Maxim De Cuyper","Brighton"),p(15,"DF","Thomas Meunier","Lille"),p(16,"DF","Koni De Winter","Milan"),p(18,"DF","Joaquín Seys","Club Brugge"),p(21,"DF","Timothy Castagne","Fulham"),p(25,"DF","Nathan Ngoy","Lille"),
+ p(6,"MF","Axel Witsel","Girona"),p(7,"MF","Kevin De Bruyne","Napoli"),p(8,"MF","Youri Tielemans","Aston Villa"),p(19,"MF","Diego Moreira","Strasbourg"),p(20,"MF","Hans Vanaken","Club Brugge"),p(22,"MF","Alexis Saelemaekers","Milan"),p(23,"MF","Nicolas Raskin","Rangers"),p(24,"MF","Amadou Onana","Aston Villa"),
+ p(9,"FW","Romelu Lukaku","Napoli"),p(10,"FW","Leandro Trossard","Arsenal"),p(11,"FW","Jérémy Doku","Manchester City"),p(14,"FW","Dodi Lukébakio","Benfica"),p(17,"FW","Charles De Ketelaere","Atalanta"),p(26,"FW","Matías Fernández-Pardo","Lille")
+]};
+
+/* 36 additional squads parsed from football365 published lists (number, club). */
+SQUADS["Mexico"]={coach:"Javier Aguirre",src:"f365",players:[
+ p(1,"GK","Raul Rangel","CD Guadalajara"),p(12,"GK","Carlos Acevedo","Santos Laguna"),p(13,"GK","Guillermo Ochoa","AEL Limassol"),p(2,"DF","Jorge Sanchez","PAOK"),p(3,"DF","Cesar Montes","Lokomotiv Moscow"),p(4,"DF","Edson Alvarez","Fenerbahce"),p(5,"DF","Johan Vasquez","Genoa"),p(15,"DF","Israel Reyes","America"),p(20,"DF","Mateo Chavez","AZ Alkmaar"),p(23,"DF","Jesus Gallardo","Toluca"),p(6,"MF","Erik Lira","Cruz Azul"),p(7,"MF","Luis Romo","CD Guadalajara"),p(8,"MF","Alvaro Fildalgo","Real Betis"),p(17,"MF","Orbelin Pineda","AEK Athens"),p(18,"MF","Obed Vargas","Atletico Madrid"),p(19,"MF","Gilberto Mora","Tijuana"),p(24,"MF","Luis Chavez","Dynamo Moscow"),p(25,"MF","Roberto Alvarado","Guadalajara"),p(26,"MF","Brian Gutierrez","CD Guadalajara"),p(9,"FW","Raul Jimenez","Fulham"),p(10,"FW","Alexis Vega","Toluca"),p(11,"FW","Santiago Gimenez","Milan"),p(14,"FW","Armando Gonzalez","CD Guadalajara"),p(16,"FW","Julian Quinones","Al-Qadsiah"),p(21,"FW","Cesar Huerta","Anderlecht"),p(22,"FW","Guillermo Martinez","UNAM")
+]};
+SQUADS["South Africa"]={coach:"Hugo Broos",src:"f365",players:[
+ p(1,"GK","Ronwen Williams","Mamelodi Sundowns"),p(16,"GK","Sipho Chaine","Orlando Pirates"),p(22,"GK","Ricardo Goss","Siwelele"),p(2,"DF","Thabang Matuludi","Polokwane City"),p(3,"DF","Khulumani Ndamane","Mamelodi Sundowns"),p(6,"DF","Aubrey Modiba","Mamelodi Sundowns"),p(14,"DF","Mbekezeli Mbokazi","Chicago Fire"),p(18,"DF","Samukele Kabini","Molde"),p(19,"DF","Nkosinathi Sibisi","Orlando Pirates"),p(20,"DF","Khuliso Mudau","Mamelodi Sundowns"),p(21,"DF","Ime Okon","Hannover"),p(24,"DF","Olwethu Makhanya","Philadelphia Union"),p(26,"DF","Bradley Cross","Kaizer Chiefs"),p(4,"MF","Teboho Mokoena","Mamelodi Sundowns"),p(5,"MF","Thalente Mbatha","Orlando Pirates"),p(8,"MF","Thsepang Moremi","Orlando Pirates"),p(11,"MF","Themba Zwane","Mamelodi Sundowns"),p(13,"MF","Sphephelo Sithole","Tondela"),p(23,"MF","Jayden Adams","Mamelodi Sundowns"),p(7,"FW","Oswin Appolis","Orlando Pirates"),p(9,"FW","Lyle Foster","Burnley"),p(10,"FW","Relebohile Mofokeng","Orlando Pirates"),p(12,"FW","Thapelo Maseko","AEL Limassol"),p(15,"FW","Iqraam Rayners","Mamelodi Sundowns"),p(17,"FW","Evidence Makgopa","Orlando Pirates"),p(25,"FW","Kamogelo Sebelebele","Orlando Pirates")
+]};
+SQUADS["South Korea"]={coach:"Hong Myung-bo",src:"f365",players:[
+ p(1,"GK","Kim Seung-gyu","FC Tokyo"),p(12,"GK","Song Bum-keun","Joenbuk Hyundai Motors"),p(21,"GK","Jo Hyeon-woo","Ulsan HD"),p(2,"DF","Lee Han-beom","Midtjylland"),p(4,"DF","Kim Min-jae","Bayern Munich"),p(5,"DF","Kim Tae-hyeon","Kashima Antlers"),p(13,"DF","Lee Tae-seok","Austria Vienna"),p(14,"DF","Cho Wi-je","Jeonbuk Hyundai Motors"),p(15,"DF","Kim Moon-hwan","Daejeon Hana Citizen"),p(16,"DF","Park Jin-seob","Zhejiang FC"),p(22,"DF","Sel Young-woo","Red Star Belgrade"),p(23,"DF","Jens Castrop","Borussia Monchengladbach"),p(3,"MF","Lee Ki-hyuk","Gangwon FC"),p(6,"MF","Hwang In-beom","Feyenoord"),p(8,"MF","Paik Seung-ho","Birmingham City"),p(10,"MF","Lee Jae-sung","Mainz"),p(11,"MF","Hwang Hee-chan","Wolverhampton Wanderers"),p(17,"MF","Bae Jun-ho","Stoke City"),p(19,"MF","Lee Kang-in","Paris Saint-Germain"),p(20,"MF","Yang Hyun-jun","Celtic"),p(24,"MF","Kim Jun-gyu","Jeonbuk Hyundai Motors"),p(25,"MF","Eom Ji-sung","Swansea City"),p(null,"MF","Lee Dong-gyeong","Ulsan HD"),p(7,"FW","Son Heung-min","Los Angeles FC"),p(9,"FW","Cho Gue-sung","Midtjylland"),p(18,"FW","Oh Hyeon-gyu","Besiktas")
+]};
+SQUADS["Czechia"]={coach:"Miroslav Koubek",src:"f365",players:[
+ p(1,"GK","Matej Kovar","PSV Eindhoven"),p(16,"GK","Jindrich Stanek","Slavia Prague"),p(23,"GK","Lukas Hornicek","Braga"),p(2,"DF","David Zima","Slavia Prague"),p(3,"DF","Tomas Holes","Slavia Prague"),p(4,"DF","Robin Hranac","Hoffenheim"),p(5,"DF","Vladimir Coufal","Hoffenheim"),p(6,"DF","Stepan Chaloupek","Slavia Prague"),p(7,"DF","Ladislav Krejci","Wolverhampton Wanderers"),p(14,"DF","David Jurasek","Slavia Prague"),p(20,"DF","Jaroslav Zeleny","Sparta Prague"),p(21,"DF","David Doudera","Slavia Prague"),p(8,"MF","Vladimir Darida","Hradec Kralove"),p(12,"MF","Lukas Cerv","Viktoria Plzen"),p(17,"MF","Lukas Provod","Slavia Prague"),p(18,"MF","Michal Sadilek","Slavia Prague"),p(22,"MF","Tomas Soucek","West Ham"),p(24,"MF","Alexandr Sojka","Viktoria Plzen"),p(25,"MF","Hugo Sochurek","Sparta Prague"),p(26,"MF","Denis Visinsky","Viktoria Plzen"),p(9,"FW","Adam Hlozek","Hoffenheim"),p(10,"FW","Patrik Schick","Bayer Leverkusen"),p(11,"FW","Jan Kuchta","Sparta Prague"),p(13,"FW","Mojmir Chytil","Slavia Prague"),p(15,"FW","Pavel Sulc","Lyon"),p(19,"FW","Tomas Chory","Slavia Prague")
+]};
+SQUADS["Canada"]={coach:"Jesse Marsch",src:"f365",players:[
+ p(1,"GK","Dayne St. Clair","Inter Miami"),p(16,"GK","Maxime Crepeau","Orlando City SC"),p(18,"GK","Owen Goodman","Barnsley"),p(2,"DF","Alistair Johnston","Celtic"),p(3,"DF","Alfie Jones","Middlesbrough"),p(4,"DF","Luc de Fougerolles","Dender"),p(5,"DF","Joel Waterman","Chicago Fire"),p(13,"DF","Derek Cornelius","Rangers"),p(15,"DF","Moise Bombito","Nice"),p(19,"DF","Alphonso Davies","Bayern Munich"),p(22,"DF","Richie Laryea","Toronto FC"),p(23,"DF","Niko Sigur","Hajduk Split"),p(6,"MF","Mathieu Choiniere","Los Angeles FC"),p(7,"MF","Stephen Eustaquio","Los Angeles FC"),p(8,"MF","Ismael Kone","Sassuolo"),p(11,"MF","Liam Millar","Hull City"),p(14,"MF","Jacob Shaffelburg","Los Angeles FC"),p(17,"MF","Tajon Buchanan","Villarreal"),p(20,"MF","Ali Ahmed","Norwich City"),p(21,"MF","Jonathan Osorio","Toronto FC"),p(25,"MF","Nathan Saliba","Anderlecht"),p(26,"MF","Jayden Nelson","Austin FC"),p(9,"FW","Cyle Larin","Southampton"),p(10,"FW","Jonathan David","Juventus"),p(12,"FW","Tani Oluwaseyi","Villarreal"),p(24,"FW","Promise David","Union Saint-Gilloise")
+]};
+SQUADS["Bosnia"]={coach:"Sergej Barbarez",src:"f365",players:[
+ p(1,"GK","Nikola Vasilj","St Pauli"),p(12,"GK","Mladen Jurkas","Borac Banja Luka"),p(22,"GK","Martin Zlomislic","Rijeka"),p(2,"DF","Nihad Mujakic","Gaziantep"),p(3,"DF","Dennis Hadzikadunic","Sampdoria"),p(4,"DF","Tarik Muharemovic","Sassuolo"),p(5,"DF","Sead Kolasinac","Atalanta"),p(7,"DF","Amar Dedic","Benfica"),p(18,"DF","Nikola Katic","Schalke 04"),p(21,"DF","Stjepan Radeljic","Rijeka"),p(24,"DF","Nidal Celik","Lens"),p(6,"MF","Benjamin Tahirovic","Brondby"),p(8,"MF","Armin Gigovic","Young Boys"),p(13,"MF","Ivan Basic","Astana"),p(14,"MF","Ivan Sunjic","Pafos"),p(15,"MF","Amar Memic","Viktoria Plzen"),p(16,"MF","Amir Hadziahmetovic","Hull City"),p(17,"MF","Dzenis Burnic","Karlsruher SC"),p(26,"MF","Ermin Mahmic","Slovan Liberec"),p(9,"FW","Samed Bazdar","Jagiellonia Bialystok"),p(10,"FW","Ermedin Demirovic","VfB Stuttgart"),p(11,"FW","Edin Dzeko","Schalke 04"),p(19,"FW","Kerim Alajbegovic","RB Salzburg"),p(20,"FW","Esmir Bajraktarevic","PSV Eindhoven"),p(23,"FW","Haris Tabakovic","Borussia Moenchengladbach"),p(25,"FW","Jovo Lukic","Universitatea Cluj")
+]};
+SQUADS["Qatar"]={coach:"Julen Lopetegui",src:"f365",players:[
+ p(1,"GK","Mahmoud Abunada","Al-Rayyan"),p(21,"GK","Salah Zakaria","Al-Duhail"),p(22,"GK","Meshaal Barsham","Al-Sadd"),p(2,"DF","Pedro Miguel","Al-Sadd"),p(3,"DF","Lucas Mendes","Al-Wakrah"),p(4,"DF","Issa Laye","Al-Arabi"),p(13,"DF","Ayoub Al-Oui","Al-Gharafa"),p(14,"DF","Homam Ahmed","Cultural Leonesa"),p(16,"DF","Boualem Khoukhi","Al-Sadd"),p(18,"DF","Sultan Al-Brake","Al-Duhail"),p(25,"DF","Al-Hashmi Al-Hussain","Al-Arabi"),p(5,"MF","Jassem Gaber","Al-Rayyan"),p(6,"MF","Abdulaziz Hatem","Al-Rayyan"),p(12,"MF","Karim Boudiaf","Al-Duhail"),p(20,"MF","Ahmed Fathy","Al-Arabi"),p(23,"MF","Assim Madibo","Al-Wakrah"),p(26,"MF","Mohamed Al-Mannai","Al-Shamal"),p(7,"FW","Ahmed Alaaeldin","Al-Rayyan"),p(8,"FW","Edmilson Junior","Al-Duhail"),p(9,"FW","Mohammed Muntari","Al-Gharafa"),p(10,"FW","Hassan Al-Haydos","Al-Sadd"),p(11,"FW","Akram Afif","Al-Sadd"),p(15,"FW","Yusuf Abdurisag","Al-Wakrah"),p(17,"FW","Ahmed Al-Ganehi","Al-Gharafa"),p(19,"FW","Almoez Ali","Al-Duhail"),p(24,"FW","Tahsin Jamshid","Al-Duhail")
+]};
+SQUADS["Switzerland"]={coach:"Murat Yakin",src:"f365",players:[
+ p(1,"GK","Gregor Kobel","Borussia Dortmund"),p(12,"GK","Yvon Mvogo","Lorient"),p(21,"GK","Marvin Keller","Young Boys"),p(2,"DF","Miro Muheim","Hamburg"),p(3,"DF","Silvan Widmer","Mainz"),p(4,"DF","Nico Elvedi","Borussia Monchengladbach"),p(5,"DF","Manuel Akanji","Internazionale"),p(13,"DF","Ricardo Rodriguez","Real Betis"),p(18,"DF","Eray Comert","Valencia"),p(24,"DF","Aurele Amenda","Eintracht Frankfurt"),p(25,"DF","Luca Jaquez","Stuttgart"),p(6,"MF","Denis Zakaria","Monaco"),p(8,"MF","Remo Freuler","Bologna"),p(9,"MF","Johan Manzambi","Freiburg"),p(10,"MF","Granit Xhaka","Sunderland"),p(14,"MF","Ardon Jashari","Milan"),p(15,"MF","Djibril Sow","Sevilla"),p(16,"MF","Christian Fassnacht","Young Boys"),p(20,"MF","Michel Aebischer","Pisa"),p(22,"MF","Fabian Rieder","Augsburg"),p(7,"FW","Breel Embolo","Rennes"),p(11,"FW","Dan Ndoye","Nottingham Forest"),p(17,"FW","Ruben Vargas","Sevilla"),p(19,"FW","Noah Okafor","Leeds United"),p(23,"FW","Zeki Amdouni","Burnley"),p(26,"FW","Cedric Itten","Fortuna Dusseldorf")
+]};
+SQUADS["Morocco"]={coach:"Mohamed Ouahbi",src:"f365",players:[
+ p(null,"GK","Yassine Bounou","Al-Hilal"),p(12,"GK","Munir Mohamedi","Renaissance Berkane"),p(22,"GK","Ahmed Reda Tagnaouti","AS FAR"),p(null,"DF","Achraf Hakimi","PSG"),p(3,"DF","Noussair Mazraoui","Manchester United"),p(5,"DF","Nayef Aguerd","Marseille"),p(13,"DF","Zakaria El Ouahdi","KRC Genk"),p(14,"DF","Issa Diop","Fulham"),p(18,"DF","Chadi Riad","Crystal Palace"),p(19,"DF","Youssef Belammari","Al-Ahly"),p(25,"DF","Redouane Halhal","Mechelen"),p(26,"DF","Anass Salah-Eddine","PSV Eindhoven"),p(null,"MF","Sofyan Amrabat","Real Betis"),p(6,"MF","Ayyoub Bouaddi","Lille"),p(7,"MF","Chemsdine Talbi","Sunderland"),p(8,"MF","Azzedine Ounahi","Girona"),p(11,"MF","Ismael Saibari","PSV Eindhoven"),p(15,"MF","Samir El Mourabet","Strasbourg"),p(16,"MF","Gessime Yassine","Strasbourg"),p(23,"MF","Bilal El Khannouss","VfB Stuttgart"),p(24,"MF","Neil El Aynaoui","AS Roma"),p(null,"FW","Soufiane Rahimi","Al-Ain SC"),p(10,"FW","Brahim Diaz","Real Madrid"),p(17,"FW","Abde Ezzalzouli","Real Betis"),p(20,"FW","Ayoub El Kaabi","Olympiacos"),p(21,"FW","Ayoube Amaimouni","Eintracht Frankfurt")
+]};
+SQUADS["Haiti"]={coach:"Sebastien Migne",src:"f365",players:[
+ p(1,"GK","Johny Placide","Bastia"),p(12,"GK","Alexandre Pierre","Sochaux"),p(23,"GK","Josue Duverger","Cosmos Koblenz"),p(2,"DF","Carlens Arcus","Angers"),p(null,"DF","Keeto Thermoncy","Young Boys"),p(4,"DF","Ricardo Ade","LDU Quito"),p(5,"DF","Hannes Delcroix","Lugano"),p(8,"DF","Martin Experience","Nancy"),p(13,"DF","Duke Lacroix","Colorado Springs Switchbacks FC"),p(22,"DF","Jean-Kevin Duverne","Gent"),p(24,"DF","Wilguens Paugain","Zulte Waregem"),p(6,"MF","Carl Sainte","El Paso Locomotive FC"),p(10,"MF","Jean-Ricner Bellegarde","Wolverhampton Wanderers"),p(14,"MF","Leverton Pierre","Vizela"),p(17,"MF","Danley Jean Jacques","Philadelphia Union"),p(25,"MF","Dominique Simon","Tatran Presov"),p(26,"MF","Woodensky Pierre","Violette"),p(7,"FW","Derrick Etienne Jr","Toronto FC"),p(9,"FW","Duckens Nazon","Esteghlal"),p(11,"FW","Louicius Deedson","FC Dallas"),p(15,"FW","Ruben Providence","Almere City"),p(16,"FW","Lenny Joseph","Ferencvaros"),p(18,"FW","Wilson Isidor","Sunderland"),p(19,"FW","Yassin Fortune","Vizela"),p(20,"FW","Frantzdy Pierrot","Caykur Rizespor"),p(21,"FW","Josue Casimir","Auxerre")
+]};
+SQUADS["Scotland"]={coach:"Steve Clarke",src:"f365",players:[
+ p(1,"GK","Angus Gunn","Nottingham Forest"),p(12,"GK","Liam Kelly","Rangers"),p(21,"GK","Craig Gordon","Hearts"),p(2,"DF","Aaron Hickey","Brentford"),p(3,"DF","Andy Robertson","Liverpool"),p(5,"DF","Grant Hanley","Hibernian"),p(6,"DF","Kieran Tierney","Celtic"),p(13,"DF","Jack Hendry","Al-Ettifaq"),p(15,"DF","John Souttar","Rangers"),p(16,"DF","Dom Hyam","Wrexham"),p(22,"DF","Nathan Patterson","Everton"),p(24,"DF","Anthony Ralston","Celtic"),p(26,"DF","Scott McKenna","Dinamo Zagreb"),p(4,"MF","Scott McTominay","Napoli"),p(7,"MF","John McGinn","Aston Villa"),p(8,"MF","Tyler Fletcher","Manchester United"),p(11,"MF","Ryan Christie","Bournemouth"),p(19,"MF","Lewis Ferguson","Bologna"),p(23,"MF","Kenny McLean","Norwich"),p(9,"FW","Lyndon Dykes","Charlton"),p(10,"FW","Che Adams","Torino"),p(14,"FW","Ross Stewart","Southampton"),p(17,"FW","Ben Gannon-Doak","Bournemouth"),p(18,"FW","George Hirst","Ipswich"),p(20,"FW","Lawrence Shankland","Hearts"),p(25,"FW","Findlay Curtis","Kilmarnock")
+]};
+SQUADS["Paraguay"]={coach:"Gustavo Alfaro",src:"f365",players:[
+ p(1,"GK","Gatito Fernandez","Cerro Porteño"),p(12,"GK","Orlando Gill","San Lorenzo"),p(22,"GK","Gaston Olveira","Olimpia"),p(2,"DF","Gustavo Velazquez","Cerro Porteno"),p(3,"DF","Omar Alderete","[**Sunderland**](https://www.football365.com/sunderland"),p(4,"DF","Juan Caceres","Dynamo Moscow"),p(5,"DF","Fabian Balbuena","Gremio"),p(6,"DF","Junior Alonso","Atletico Mineiro"),p(13,"DF","Jose Canale","Lanus"),p(15,"DF","Gustavo Gomez","Palmeiras"),p(26,"DF","Alexandro Maidana","Talleres"),p(7,"MF","Ramon Sosa","Palmeiras"),p(8,"MF","Diego Gomez","Brighton"),p(10,"MF","Miguel Almiron","Atlanta United"),p(11,"MF","Mauricio","Palmeiras"),p(14,"MF","Andres Cubas","Vancouver Whitecaps"),p(16,"MF","Damian Bobadilla","Sao Paulo"),p(20,"MF","Braian Ojeda","Orlando City"),p(23,"MF","Matias Galarza","Atlanta United"),p(9,"FW","Antonio Sanabria","Cremonese"),p(17,"FW","Kaku","Al-Ain"),p(18,"FW","Alex Arce","Independiente Rivadavia"),p(19,"FW","Julio Enciso","Strasbourg")
+]};
+SQUADS["Australia"]={coach:"Tony Popovic",src:"f365",players:[
+ p(1,"GK","Mathew Ryan","Levante"),p(12,"GK","Paul Izzo","Randers"),p(18,"GK","Patrick Beach","Melbourne City"),p(2,"DF","Milos Degenek","APOEL"),p(3,"DF","Alessandro Circati","Parma"),p(4,"DF","Jacob Italiano","Grazer AK"),p(5,"DF","Jordan Bos","Feyenoord"),p(6,"DF","Jason Geria","Albirex Niigata"),p(15,"DF","Kai Trewin","New York City"),p(16,"DF","Aziz Behich","Melbourne City"),p(19,"DF","Harry Souttar","Leicester City"),p(21,"DF","Cameron Burgess","Swansea City"),p(25,"DF","Lucas Herrington","Colorado Rapids"),p(8,"MF","Connor Metcalfe","St Pauli"),p(10,"MF","Ajdin Hrustic","Heracles Almelo"),p(13,"MF","Aiden O’Neill","New York City"),p(14,"MF","Cameron Devlin","Hearts"),p(22,"MF","Jackson Irvine","St Pauli"),p(24,"MF","Paul Okon-Engstler","Sydney FC"),p(7,"FW","Mathew Leckie","Melbourne City"),p(9,"FW","Mohamed Toure","Norwich City"),p(11,"FW","Awer Mabil","Castellon"),p(17,"FW","Nestory Irankunda","Watford"),p(20,"FW","Cristian Volpato","Sassuolo"),p(23,"FW","Nishan Velupillay","Melbourne Victory"),p(26,"FW","Tete Yengi","Machida Zelvia")
+]};
+SQUADS["Turkiye"]={coach:"Vincenzo Montella",src:"f365",players:[
+ p(1,"GK","Mert Gunok","Fenerbahce"),p(12,"GK","Altay Bayindir","Manchester United"),p(23,"GK","Ugurcan Cakir","Galatasaray"),p(2,"DF","Zeki Celik","Roma"),p(3,"DF","Merih Demiral","Al-Ahli"),p(4,"DF","Caglar Soyuncu","Fenerbahce"),p(13,"DF","Eren Elmali","Galatasaray"),p(14,"DF","Abdulkerim Bardakci","Galatasaray"),p(15,"DF","Ozan Kabak","Hoffenheim"),p(18,"DF","Mert Muldur","Fenerbahce"),p(20,"DF","Ferdi Kadioglu","Brighton"),p(25,"DF","Samet Akaydin","Caykur Rizespor"),p(5,"MF","Salih Ozcan","Borussia Dortmund"),p(6,"MF","Orkun Kokcu","Besiktas"),p(10,"MF","Hakan Calhanoglu","Internazionale"),p(16,"MF","Ismail Yuksek","Fenerbahce"),p(22,"MF","Kaan Ayhan","Galatasaray"),p(7,"FW","Kerem Akturkoglu","Fenerbahce"),p(8,"FW","Arda Guler","Real Madrid"),p(9,"FW","Deniz Gul","Porto"),p(11,"FW","Kenan Yildiz","Juventus"),p(17,"FW","Irgan Can Kahveci","Kasimpasa"),p(19,"FW","Yunus Akgun","Galatasaray"),p(21,"FW","Baris Alper Yilmaz","Galatasaray"),p(24,"FW","Oguz Aydin","Fenerbahce"),p(26,"FW","Can Uzun","Eintracht Frankfurt")
+]};
+SQUADS["Curacao"]={coach:"Dick Advocaat",src:"f365",players:[
+ p(1,"GK","Eloy Room","Miami FC"),p(25,"GK","Tyrick Bodak","Telstar"),p(26,"GK","Trevor Doornbusch","VVV-Venlo"),p(2,"DF","Shurandy Sambo","Sparta Rotterdam"),p(3,"DF","Jurien Gaari","Abha"),p(4,"DF","Roshon van Ejima","RKC Waalwijk"),p(5,"DF","Sherel Floranus","PEC Zwolle"),p(18,"DF","Armando Obispo","PSV Eindhoven"),p(20,"DF","Joshua Brenet","Kayserispor"),p(23,"DF","Riechedly Bazoer","Konyaspor"),p(24,"DF","Deveron Fonville","NEC"),p(6,"MF","Godfried Roemeratoe","RKC Waalwijk"),p(7,"MF","Juninho Bacuna","Volendam"),p(8,"MF","Livano Comenencia","Zurich"),p(10,"MF","Leandro Bacuna","Igdir"),p(13,"MF","Tyrese Noslin","Telstar"),p(15,"MF","Ar’jany Martha","Rotherham United"),p(22,"MF","Kevin Felida","Den Bosch"),p(9,"FW","Jurgen Locadia","Miami FC"),p(11,"FW","Jeremy Antonisse","Kifisia"),p(12,"FW","Sontje Hansen","Middlesbrough"),p(14,"FW","Kenji Gorre","Maccabi Haifa"),p(16,"FW","Jearl Margaritha","Beveren"),p(17,"FW","Brandley Kuwas","Volendam"),p(19,"FW","Gervane Kastaneer","Terengganu"),p(21,"FW","Tahith Chong","Sheffield United")
+]};
+SQUADS["Ivory Coast"]={coach:"Emerse Fae",src:"f365",players:[
+ p(1,"GK","Yahia Fofana","Caykur Rizespor"),p(16,"GK","Mohamed Kone","Charleroi"),p(23,"GK","Alban Lafont","Panathinaikos"),p(2,"DF","Ousmane Diomande","Sporting CP"),p(3,"DF","Ghislain Konan","Gil Vicente"),p(5,"DF","Wilfried Singo","Galatasaray"),p(7,"DF","Odilon Kossounou","Atalanta"),p(13,"DF","Christopher Operi","Istanbul Basaksehir"),p(17,"DF","Guela Doue","Strasbourg"),p(20,"DF","Emmanuel Agbadou","Besiktas"),p(21,"DF","Evan Ndicka","Roma"),p(4,"MF","Jean Michael Seri","Maribor"),p(6,"MF","Seko Fofana","Porto"),p(8,"MF","Franck Kessie","Al-Ahli"),p(18,"MF","Ibrahim Sangare","Nottingham Forest"),p(25,"MF","Parfait Guiagon","Charleroi"),p(26,"MF","Christ Inao Oulai","Trabzonspor"),p(9,"FW","Ange-Yoan Bonny","Internazionale"),p(10,"FW","Simon Adingra","Monaco"),p(11,"FW","Yan Diomande","RB Leipzig"),p(12,"FW","Elye Wahi","Nice"),p(14,"FW","Oumar Diakite","Cercle Brugge"),p(15,"FW","Amad Diallo","Manchester United"),p(19,"FW","Nicolas Pepe","Villarreal"),p(22,"FW","Evann Guessand","Crystal Palace"),p(24,"FW","Bazouamana Traore","Hoffenheim")
+]};
+SQUADS["Ecuador"]={coach:"Sebastian Beccacece",src:"f365",players:[
+ p(1,"GK","Hernan Galindez","Huracan"),p(12,"GK","Moises Ramirez","Kifisia"),p(2,"DF","Felix Torres","Internacional"),p(3,"DF","Piero Hincapie","Arsenal"),p(4,"DF","Joel Ordonez","Club Brugge"),p(6,"DF","Willian Pacho","Paris Saint-Germain"),p(7,"DF","Pervis Estupinan","Milan"),p(17,"DF","Angelo Preciado","Atletico Mineiro"),p(25,"DF","Jackson Porozo","Tijuana"),p(8,"MF","Denil Castillo","Midtjylland"),p(9,"MF","John Yeboah","Venezia"),p(10,"MF","Kendry Paez","River Plate"),p(14,"MF","Alan Minda","Atletico Mineiro"),p(15,"MF","Pedro Vite","UNAM"),p(19,"MF","Gonzalo Plata","Flamengo"),p(23,"MF","Moises Caicedo","Chelsea"),p(24,"MF","Yaimar Medina","Genk"),p(11,"FW","Kevin Rodriguez","Union Saint-Gilloise"),p(13,"FW","Enner Valencia","Pachuca"),p(16,"FW","Anthony Valencia","Antwerp"),p(18,"FW","Jordy Caicedo","Huracan"),p(20,"FW","Nilson Angulo","Sunderland"),p(26,"FW","Jeremy Arevalo","Stuttgart")
+]};
+SQUADS["Japan"]={coach:"Hajime Moriyasu",src:"f365",players:[
+ p(1,"GK","Zion Suzuki","Parma"),p(12,"GK","Keisuke Osako","Sanfrecce Hiroshima"),p(23,"GK","Tomoki Hayakawa","Kashima Antlers"),p(2,"DF","Yukinari Sugawara","Werder Bremen"),p(3,"DF","Shogo Taniguchi","Sint-Truiden"),p(4,"DF","Ko Itakura","Ajax"),p(5,"DF","Yuta Nagatomo","FC Tokyo"),p(16,"DF","Tsuyoshi Watanabe","Feyenoord"),p(20,"DF","Ayumu Seko","Le Havre"),p(21,"DF","Hiroki Ito","Bayern Munich"),p(22,"DF","Takehiro Tomiyasu","Ajax"),p(25,"DF","Junnosuke Suzuki","Copenhagen"),p(6,"MF","Wataru Endo","Liverpool"),p(7,"MF","Ao Tanaka","Leeds United"),p(8,"MF","Takefusa Kubo","Real Sociedad"),p(10,"MF","Ritsu Doan","Eintracht Frankfurt"),p(13,"MF","Keito Nakamura","Reims"),p(14,"MF","Junya Ito","Genk"),p(15,"MF","Daichi Kamada","Crystal Palace"),p(24,"MF","Kaishu Sano","Mainz"),p(9,"FW","Keisuke Goto","Sint-Truiden"),p(11,"FW","Daizen Maeda","Celtic"),p(17,"FW","Yuito Suzuki","Freiburg"),p(18,"FW","Ayase Ueda","Feyenoord"),p(19,"FW","Koki Ogawa","NEC Nijmegen"),p(26,"FW","Kento Shiogai","Wolfsburg")
+]};
+SQUADS["Sweden"]={coach:"Graham Potter",src:"f365",players:[
+ p(1,"GK","Jacob Widell Zetterstrom","Derby County"),p(12,"GK","Viktor Johansson","Stoke City"),p(23,"GK","Kristoffer Nordfeldt","AIK"),p(2,"DF","Gustaf Lagerbielke","Braga"),p(3,"DF","Victor Lindelof","**[Aston Villa](https://www.football365.com/aston-villa"),p(4,"DF","Isak Hien","Atalanta"),p(5,"DF","Gabriel Gudmundsson","[**Leeds United**](https://www.football365.com/leeds-united"),p(6,"DF","Herman Johansson","FC Dallas"),p(8,"DF","Daniel Svensson","Borussia Dortmund"),p(14,"DF","Hjalmar Ekdal","Burnley"),p(15,"DF","Carl Starfelt","Celta Vigo"),p(20,"DF","Eric Smith","St. Pauli"),p(24,"DF","Elliot Stroud","Mjallby"),p(7,"MF","Lucas Bergvall","Tottenham Hotspur"),p(13,"MF","Ken Sema","Pafos"),p(16,"MF","Jesper Karlstrom","Udinese"),p(18,"MF","Yasin Ayari","Brighton"),p(19,"MF","Mattias Svanberg","Wolfsburg"),p(22,"MF","Besfort Zeneli","Union St-Gilloise"),p(26,"MF","Taha Ali","Malmo"),p(9,"FW","Alexander Isak","Liverpool"),p(10,"FW","Benjamin Nygren","Celtic"),p(11,"FW","Anthony Elanga","Newcastle United"),p(17,"FW","Viktor Gyokeres","Arsenal"),p(21,"FW","Alexander Bernhardsson","Holstein Kiel"),p(25,"FW","Gustaf Nilsson","Club Brugge")
+]};
+SQUADS["Tunisia"]={coach:"Sabri Lamouchi",src:"f365",players:[
+ p(1,"GK","Mouhib Chamakh","Club Africain"),p(16,"GK","Aymen Dahmen","CS Sfaxien"),p(22,"GK","Sabri Ben Heesen","Etoile du Sahel"),p(2,"DF","Ali Abdi","Nice"),p(3,"DF","Montassar Talbi","Lorient"),p(4,"DF","Omar Rekik","Maribor"),p(5,"DF","Adem Arous","Kasimpasa"),p(6,"DF","Dylan Bronn","Servette"),p(12,"DF","Mortadha Ben Ouanes","Kasimpasa"),p(20,"DF","Yan Valery","Young Boys"),p(21,"DF","Mohamed Amine Ben Hamida","Esperance de Tunis"),p(23,"DF","Moutas Neffati","IFK Norrkoping"),p(24,"DF","Raed Chikhaoui","US Monastir"),p(10,"MF","Hannibal Mejbri","Burnley"),p(11,"MF","Ismael Gharbi","Augsburg"),p(13,"MF","Rani Khedira","Union Berlin"),p(14,"MF","Khalil Ayari","Paris Saint-Germain"),p(15,"MF","Hadj Mahmoud","Lugano"),p(17,"MF","Ellyes Skhiri","Eintracht Frankfurt"),p(25,"MF","Anis Ben Slimane","Norwich City"),p(26,"MF","Sebastian Tounekti","Celtic"),p(7,"FW","Elias Achouri","Copenhagen"),p(8,"FW","Elias Saad","Hannover"),p(9,"FW","Hazem Mastouri","Dynamo Makhachkala"),p(18,"FW","Rayan Elloumi","Vancouver Whitecaps"),p(19,"FW","Firas Chaouat","Club Africain")
+]};
+SQUADS["Egypt"]={coach:"Hossam Hassan",src:"f365",players:[
+ p(1,"GK","Mohamed El Shenawy","Al Ahly"),p(16,"GK","El Mahdy Soliman","Zamalek"),p(23,"GK","Mostafa Shobeir","Al Ahly"),p(26,"GK","Mohamed Alaa","El Gouna"),p(2,"DF","Yasser Ibrahim","Al Ahly"),p(3,"DF","Mohamed Hany","Al Ahly"),p(4,"DF","Hossam Abdelmaguid","Zamalek"),p(5,"DF","Ramy Rabia","Al Ain"),p(6,"DF","Mohamed Abdelmonem","Nice"),p(13,"DF","Ahmed Abou El Fotouh","Zamalek"),p(15,"DF","Karim Hafez","Pyramids"),p(24,"DF","Tarek Alaa","ZED"),p(8,"MF","Emam Ashour","Al Ahly"),p(11,"MF","Mostafa Ziko","Pyramids"),p(14,"MF","Hamdy Fathy","Al-Wakrah"),p(17,"MF","Mohanad Lasheen","Pyramids"),p(18,"MF","Nabil Emad","Al-Najma"),p(19,"MF","Marwan Attia","Al Ahly"),p(21,"MF","Mahmoud Saber","ZED"),p(7,"FW","Trezeguet","Al Ahly"),p(9,"FW","Hamza Abdelkarim","Barcelona"),p(10,"FW","Mohamed Salah","Liverpool"),p(12,"FW","Haissem Hassan","Oviedo"),p(20,"FW","Ibrahim Adel","Nordsjaelland"),p(22,"FW","Omar Marmoush","Manchester City"),p(25,"FW","Zizo","Al Ahly")
+]};
+SQUADS["Iran"]={coach:"Amir Ghalenoei",src:"f365",players:[
+ p(1,"GK","Alireza Beiranvand","Tractor"),p(12,"GK","Payam Niazmand","Persepolis"),p(22,"GK","Hossein Hosseini","Sepahan"),p(2,"DF","Saleh Hardani","Esteghlal"),p(3,"DF","Ehsan Hajsafi","Sepahan"),p(4,"DF","Shojae Khalilzadeh","Tractor"),p(5,"DF","Milad Mohammadi","Persepolis"),p(13,"DF","Hossein Kanaanizadegan","Persepolis"),p(17,"DF","Aria Yousefi","Sepahan"),p(19,"DF","Ali Nemati","Foolad"),p(23,"DF","Ramin Rezaeian","Foolad"),p(25,"DF","Danial Eiri","Malavan"),p(6,"MF","Saeid Ezatolahi","Shabab Al-Ahli"),p(7,"MF","Alireza Jahanbakhsh","Dender"),p(8,"MF","Mohammad Mohebi","Rostov"),p(14,"MF","Saman Ghoddos","Kalba"),p(15,"MF","Rouzbeh Cheshmi","Esteghlal"),p(16,"MF","Mehdi Torabi","Tractor"),p(21,"MF","Mohammad Ghorbani","Al-Wahda"),p(26,"MF","Amirmohammad Rassaghinia","Esteghlal"),p(9,"FW","Mehdi Taremi","Olympiacos"),p(10,"FW","Mehdi Ghayedi","Al-Nasr"),p(11,"FW","Ali Alipour","Persepolis"),p(18,"FW","Amirhossein Hosseinzadeh","Tractor"),p(20,"FW","Shahriyar Moghanlou","Kalba"),p(24,"FW","Dennis Eckert","Standard Liege")
+]};
+SQUADS["New Zealand"]={coach:"Darren Bazeley",src:"f365",players:[
+ p(1,"GK","Max Crocombe","Millwall FC"),p(12,"GK","Alex Paulsen","Lechia Gdańsk"),p(22,"GK","Michael Woud","Auckland FC"),p(2,"DF","Tim Payne","Wellington Phoenix"),p(3,"DF","Francis De Vries","Auckland FC"),p(4,"DF","Tyler Bindon","Nottingham Forest"),p(5,"DF","Michael Boxall","Minnesota United"),p(13,"DF","Liberato Cacace","Wrexham AFC"),p(15,"DF","Nando Pijnaker","Auckland FC"),p(16,"DF","Finn Surman","Portland Timbers"),p(24,"DF","Callan Elliot","Auckland FC"),p(26,"DF","Tommy Smith","Braintree Town"),p(6,"MF","Joe Bell","Viking FK"),p(8,"MF","Marko Stamenić","Swansea City"),p(14,"MF","Alex Rufer","Wellington Phoenix"),p(23,"MF","Ryan Thomas","PEC Zwolle"),p(25,"MF","Lachlan Bayliss","Newcastle Jets"),p(7,"FW","Matt Garbett","Peterborough United"),p(9,"FW","Chris Wood","Nottingham Forest"),p(10,"FW","Sarpreet Singh","Wellington Phoenix"),p(11,"FW","Eli Just","Motherwell FC"),p(17,"FW","Kosta Barbarouses","Western Sydney Wanderers"),p(18,"FW","Ben Waine","Port Vale"),p(19,"FW","Ben Old","Saint-Étienne"),p(20,"FW","Callum McCowatt","Silkeborg"),p(21,"FW","Jesse Randall","Auckland FC")
+]};
+SQUADS["Cape Verde"]={coach:"Bubista",src:"f365",players:[
+ p(1,"GK","Vozinha","Chaves"),p(12,"GK","Marcio Rosa","Montana"),p(23,"GK","CJ dos Santos","San Diego"),p(2,"DF","Stopira","Torreense"),p(3,"DF","Diney","Al Bataeh"),p(4,"DF","Roberto Lopes","Shamrock Rovers"),p(5,"DF","Logan Costa","Villarreal"),p(13,"DF","Sidny Lopes Cabral","Benfica"),p(22,"DF","Steven Moreira","Columbus Crew"),p(24,"DF","Wagner Pina","Trabzonspor"),p(25,"DF","Kelvin Pires","SJK"),p(6,"MF","Kevin Pina","Krasnodar"),p(7,"MF","Jovane Cabral","Estrela Amadora"),p(8,"MF","Joao Paulo","FCSB"),p(10,"MF","Jamiro Monteiro","PEC Zwolle"),p(14,"MF","Deroy Duarte","Ludogerets Razgrad"),p(15,"MF","Laros Duarte","Puskas Akademia"),p(16,"MF","Yannick Semedo","Farense"),p(18,"MF","Telmo Arcanjo","Vitoria de Guimaraes"),p(21,"MF","Nuno da Costa","Istanbul Basaksehir"),p(9,"FW","Gilson Benchimol","Akron Tolyatti"),p(11,"FW","Garry Rodrigues","Apollon Limassol"),p(17,"FW","Willy Semedo","Omonia"),p(19,"FW","Dailon Livramento","Casa Pia"),p(20,"FW","Ryan Mendes","Igdir"),p(26,"FW","Helio Varela","Maccabi Tel Aviv")
+]};
+SQUADS["Saudi Arabia"]={coach:"Georgios Donis",src:"f365",players:[
+ p(1,"GK","Nawaf Al-Aqidi","Al-Nassr"),p(21,"GK","Mohammed Al-Owais","Al-Ula"),p(22,"GK","Ahmed Al-Kasser","Al-Qadsiah"),p(2,"DF","Ali Majrashi","Al-Ahli"),p(3,"DF","Ali Lajami","Al-Hilal"),p(4,"DF","Abdulelah Al-Amri","Al-Nassr"),p(5,"DF","Hassan Al-Tambakti","Al-Hilal"),p(12,"DF","Saud Abdulhamid","Lens"),p(13,"DF","Nawaf Boushal","Al-Nassr"),p(14,"DF","Hassan Kadesh","Al-Ittihad"),p(24,"DF","Moteb Al-Harbi","Al-Hilal"),p(25,"DF","Jehad Thakri","Al-Qadsiah"),p(26,"DF","Mohammed Abu Al-Shamat","Al-Qadsiah"),p(6,"MF","Nasser Al-Dawsari","Al-Hilal"),p(7,"MF","Musab Al-Juwayr","Al-Qadsiah"),p(15,"MF","Abdullah Al-Khaibari","Al-Nassr"),p(16,"MF","Ziyad Al-Johani","Al-Ahli"),p(18,"MF","Alla Al-Heiji","Neom"),p(null,"MF","Mohamed Kanno","Al-Hilal"),p(8,"FW","Ayman Yahya","Al-Nassr"),p(9,"FW","Firas Al-Buraikan","Al-Ahli"),p(10,"FW","Salem Al-Dawsari","Al-Hilal"),p(11,"FW","Saleh Al-Shehri","Al-Ittihad"),p(17,"FW","Khalid Al-Ghannam","Al-Ettifaq"),p(19,"FW","Abdullah Al-Hamdan","Al-Nassr"),p(20,"FW","Sultan Mandash","Al-Hilal")
+]};
+SQUADS["Senegal"]={coach:"Pape Thiaw",src:"f365",players:[
+ p(null,"GK","Edouard Mendy","Al-Ahli"),p(null,"GK","Mory Diaw","Le Havre"),p(null,"GK","Yehvann Diouf","Nice"),p(null,"DF","Kalibou Koulibaly","Al-Hilal"),p(null,"DF","Krepin Diatta","Monaco"),p(null,"DF","Moussa Niakhite","Lyon"),p(null,"DF","Ismail Jakobs","Galatasaray"),p(null,"DF","Abdoulaye Seck","Maccabi Haifa"),p(null,"DF","El Hadji Malick Diouf","West Ham"),p(null,"DF","Mamadou Sarr","Chelsea"),p(null,"DF","Antoine Mendy","Nice"),p(null,"MF","Idrissa Gueye","Everton"),p(null,"MF","Pape Gueye","Villarreal"),p(null,"MF","Pape Matar Sarr","Tottenham Hotspur"),p(null,"MF","Pathe Ciss","Rayo Vallecano"),p(null,"MF","Lamine Camara","Monaco"),p(null,"MF","Habib Diarra","Sunderland"),p(null,"MF","Bara Sapoko Ndiaye","Bayern Munich"),p(null,"FW","Sadio Mane","Al-Nassr"),p(null,"FW","Ismaila Sarr","Crystal Palace"),p(null,"FW","Iliman Ndiaye","Everton"),p(null,"FW","Nicolas Jackson","Bayern Munich"),p(null,"FW","Bamba Dieng","Lorient"),p(null,"FW","Cherif Ndiaye","Samsunspor"),p(null,"FW","Ibrahim Mbaye","Paris Saint-Germain"),p(null,"FW","Assane Diao","Como")
+]};
+SQUADS["Iraq"]={coach:"Graham Arnold",src:"f365",players:[
+ p(1,"GK","Fahad Talib","Al-Talaba"),p(12,"GK","Jalal Hassan","Al-Zawraa"),p(22,"GK","Ahmed Basil","Al-Shorta"),p(2,"DF","Rebin Sulaka","Port"),p(3,"DF","Hussein Ali","Pogon Szczecin"),p(4,"DF","Zaid Tahseen","Pakhtakor"),p(5,"DF","Akam Hashim","Al-Zawraa"),p(6,"DF","Manaf Younis","Al-Shorta"),p(15,"DF","Ahmed Maknzi","Al-Karma"),p(23,"DF","Merchas Doski","Viktoria Plzen"),p(25,"DF","Mustafa Saadoon","Al-Shorta"),p(26,"DF","Frans Putros","Persib"),p(7,"MF","Youssef Amyn","AEK Larnaca"),p(8,"MF","Ibrahim Bayesh","Al-Dhafra"),p(14,"MF","Zidane Iqbal","Utrecht"),p(16,"MF","Amir Al-Ammari","Cracovia"),p(19,"MF","Kevin Yakob","AGF"),p(20,"MF","Aimar Sher","Sarpsborg"),p(24,"MF","Zaid Ismail","Al-Talaba"),p(9,"FW","Ali Al-Hamadi","Luton Town"),p(10,"FW","Mohanad Ali","Dibba"),p(11,"FW","Ahmed Qasem","Nashville SC"),p(13,"FW","Ali Yousuf","Al-Talaba"),p(17,"FW","Ali Jasim","Al-Najma"),p(18,"FW","Aymen Hussein","Al-Karma"),p(21,"FW","Marko Farji","Venezia")
+]};
+SQUADS["Norway"]={coach:"Stale Solbakken",src:"f365",players:[
+ p(1,"GK","Orjan Nyland","Sevilla"),p(12,"GK","Sander Tangvik","Hamburg"),p(13,"GK","Egil Selvik","Watford"),p(3,"DF","Kristoffer Ajer","Brentford"),p(4,"DF","Leo Ostigard","Genoa"),p(5,"DF","David Moller Wolfe","Wolverhampton Wanderers"),p(15,"DF","Fredrik Andre Bjorkan","Bodo/Glimt"),p(16,"DF","Marcus Holmgren Pedersen","Torino"),p(17,"DF","Torbjorn Heggem","Bologna"),p(24,"DF","Sondre Langas","Derby County"),p(25,"DF","Henrik Falchener","Viking"),p(26,"DF","Julian Ryerson","Borussia Dortmund"),p(2,"MF","Morten Thorsby","Cremonese"),p(6,"MF","Patrick Berg","Bodo/Glimt"),p(8,"MF","Sander Berge","Fulham"),p(10,"MF","Martin Odegaard","Arsenal"),p(14,"MF","Fredrik Aursnes","Benfica"),p(18,"MF","Kristian Thorstvedt","Sassuolo"),p(19,"MF","Thelo Aasgaard","Rangers"),p(20,"MF","Antonio Nusa","RB Leipzig"),p(21,"MF","Andreas Schjelderup","Benfica"),p(22,"MF","Oscar Bobb","Fulham"),p(23,"MF","Jens Petter Hauge","Bodo/Glimt"),p(7,"FW","Alexander Sorloth","Atletico Madrid"),p(9,"FW","Erling Haaland","Manchester City"),p(11,"FW","Jorgen Strand Larsen","Crystal Palace")
+]};
+SQUADS["Algeria"]={coach:"Vladimir Petkovic",src:"f365",players:[
+ p(1,"GK","Melvin Mastil","Stade Nyonnais"),p(16,"GK","Oussama Benbot","USM Alger"),p(23,"GK","Luca Zidane","Granada"),p(2,"DF","Aissa Mandi","Lille"),p(3,"DF","Achref Abada","USM Alger"),p(4,"DF","Mohamed Amine Tougai","Esperance de Tunis"),p(5,"DF","Zineddine Belaid","JS Kabylie"),p(13,"DF","Jaouen Hadjam","Young Boys"),p(15,"DF","Rayan Ait-Nouri","Manchester City"),p(17,"DF","Rafik Belghali","Hellas Verona"),p(21,"DF","Ramy Bensebaini","Borussia Dortmund"),p(26,"DF","Samir Chergui","Paris FC"),p(6,"MF","Ramiz Zerrouki","Twente"),p(8,"MF","Houssem Aouar","Al-Ittihad"),p(10,"MF","Fares Chaibi","Eintracht Frankfurt"),p(14,"MF","Hicham Boudaoui","Nice"),p(19,"MF","Nabil Bentaleb","Lille"),p(22,"MF","Ibrahim Maza","Bayer Leverkusen"),p(24,"MF","Yacine Titraoui","Charleroi"),p(7,"FW","Riyad Mahrez","Al-Ahli"),p(9,"FW","Amine Gouiri","Marseille"),p(11,"FW","Anis Hadj Moussa","Feyenoord"),p(12,"FW","Nadhir Benbouali","Gyor"),p(18,"FW","Mohamed Amoura","Wolfsburg"),p(20,"FW","Adil Boulbina","Al-Duhail"),p(25,"FW","Fares Ghedjemis","Frosinone")
+]};
+SQUADS["Austria"]={coach:"Ralf Rangnick",src:"f365",players:[
+ p(1,"GK","Alexander Schlager","Red Bull Salzburg"),p(12,"GK","Florian Wiegele","Viktoria Plzen"),p(13,"GK","Patrick Pentz","Brondby"),p(2,"DF","Dafid Affengruber","Elche"),p(3,"DF","Kevin Danso","Tottenham Hotspur"),p(5,"DF","Stefan Posch","Mainz"),p(8,"DF","David Alaba","Real Madrid"),p(15,"DF","Philipp Lienhart","Freiburg"),p(16,"DF","Philipp Mwene","Mainz"),p(22,"DF","Alexander Prass","Hoffenheim"),p(23,"DF","Marco Friedl","Werder Bremen"),p(25,"DF","Michael Svoboda","Venezia"),p(4,"MF","Xaver Schlager","RB Leipzig"),p(6,"MF","Nicolas Seiwald","RB Leipzig"),p(9,"MF","Marcel Sabitzer","Borussia Dortmund"),p(10,"MF","Florian Grillitsch","Braga"),p(17,"MF","Carney Chukwuemeka","Borussia Dortmund"),p(18,"MF","Romano Schmid","Werder Bremen"),p(20,"MF","Konrad Laimer","Bayern Munich"),p(21,"MF","Patrick Wimmer","Wolfsburg"),p(24,"MF","Paul Wanner","PSV Eindhoven"),p(26,"MF","Alessandro Schopf","Wolfsberger"),p(7,"FW","Marko Arnautovic","Red Star Belgrade"),p(11,"FW","Michael Gregoritsch","Augsburg"),p(14,"FW","Sasa Kalajdzic","LASK")
+]};
+SQUADS["Jordan"]={coach:"Jamal Sellami",src:"f365",players:[
+ p(1,"GK","Yazeed Abdulaila","Al-Hussein"),p(12,"GK","N0ur Bani Attiah","Al-Faisaly"),p(22,"GK","Abdallah Al-Fakhouri","Al-Wehdat"),p(2,"DF","Mohammad Abu Hashish","Al-Karma"),p(3,"DF","Abdallah Nasib","Al-Zawraa"),p(4,"DF","Husam Abu Dahab","Al-Faisaly"),p(5,"DF","Yazan Al-Arab","FC Seoul"),p(16,"DF","Mohammad Abualnadi","Selangor"),p(17,"DF","Salim Obaid","Al-Hussein"),p(18,"DF","Mohammad Taha","Al-Hussein"),p(19,"DF","Saed Al-Rosan","Al-Hussein"),p(23,"DF","Ihsan Haddad","Al-Hussein"),p(26,"DF","Anas Badawi","Al-Faisaly"),p(6,"MF","Amer Jamous","Al-Zawraa"),p(8,"MF","Noor Al-Rawabdeh","Selangor"),p(14,"MF","Rajaei Ayed","Al-Hussein"),p(15,"MF","Ibrahim Sadeh","Al-Karma"),p(20,"MF","Mohannad Abu Taha","Al-Quwa Al-Jawiya"),p(21,"MF","Nizar Al-Rashdan","Qatar SC"),p(25,"MF","Mohammad Al-Dawoud","Al-Wehdat"),p(7,"FW","Mohammad Abu Zrayq","Raja Casablanca"),p(9,"FW","Ali Olwan","Al-Sailiya"),p(10,"FW","Musa Al-Taamari","Rennes"),p(11,"FW","Odeh Al-Fakhouri","Pyramids"),p(13,"FW","Mahmoud Al-Mardi","Al-Hussein"),p(24,"FW","Ali Azaizeh","Al-Shabab")
+]};
+SQUADS["DR Congo"]={coach:"Sebastien Desabre",src:"f365",players:[
+ p(1,"GK","Lionel Mpasi","Le Havre"),p(16,"GK","Timothy Fayulu","Noah"),p(21,"GK","Matthieu Epolo","Standard Liege"),p(2,"DF","Aaron Wan-Bissaka","West Ham"),p(3,"DF","Steve Kapuadi","Widzew Lodz"),p(4,"DF","Axel Tuanzebe","Burnley"),p(5,"DF","Dylan Batubinsika","AEL"),p(12,"DF","Joris Kayembe","Genk"),p(22,"DF","Chancel Mbemba","Lille"),p(24,"DF","Gedeon Kalulu","Aris Limassol"),p(26,"DF","Arthur Masuaku","Lens"),p(6,"MF","Ngal’ayel Mukau","Lille"),p(7,"MF","Nathanael Mbuku","Montpellier"),p(8,"MF","Samuel Moutoussamy","Atromitos"),p(10,"MF","Theo Bongonda","Spartak Moscow"),p(13,"MF","Meschak Elia","Alanyaspor"),p(14,"MF","Noah Sadiki","Sunderland"),p(15,"MF","Aaron Tshibola","Kilmarnock"),p(18,"MF","Charles Pickel","Espanyol"),p(25,"MF","Edo Kayembe","Watford"),p(9,"FW","Brian Cipenga","Castellon"),p(11,"FW","Gael Kakuta","AEL"),p(17,"FW","Cedric Bakambu","Real Betis"),p(19,"FW","Fiston Mayele","Pyramids"),p(20,"FW","Yoane Wissa","Newcastle United"),p(23,"FW","Simon Banza","AL Jazira")
+]};
+SQUADS["Uzbekistan"]={coach:"Fabio Cannavaro",src:"f365",players:[
+ p(1,"GK","Utkir Yusupov","Navbahor"),p(12,"GK","Abduvohid Nematov","Nasaf"),p(16,"GK","Botirali Ergashev","Neftchi"),p(2,"DF","Abdukodir Khusanov","Manchester City"),p(3,"DF","Khojiakbar Alijonov","Pakhtakor"),p(4,"DF","Farrukh Sayfiev","Neftchi"),p(5,"DF","Rustam Ashurmatov","Esteghlal"),p(13,"DF","Sherzod Nasrullaev","Nasar"),p(15,"DF","Umar Eshmurodov","Nasaf"),p(18,"DF","Abdulla Abdullaev","Dibba Al Fujairah"),p(24,"DF","Bekhruz Karimov","Surkhon"),p(25,"DF","Avazbek Ulmasaliev","AGMK"),p(26,"DF","Jakhongir Urozov","Dinamo Samarqand"),p(7,"MF","Otabek Shukurov","Baniyas"),p(8,"MF","Jamshid Iskanderov","Neftchi"),p(9,"MF","Odiljon Hamrobekov","Tractor"),p(10,"MF","Jaloliddin Masharipov","Esteghlal"),p(11,"MF","Oston Urunov","Persepolis"),p(17,"MF","Dostonbek Khamdamov","Pakhtakor"),p(19,"MF","Azizjon Ganiev","Al Bataeh"),p(22,"MF","Abbosbek Fayzullaev","Basaksehir"),p(23,"MF","Sherzod Esanov","Buxoro"),p(14,"FW","Eldor Shomurodov","Basaksehir"),p(20,"FW","Azizbek Amonov","Buxoro"),p(21,"FW","Igor Sergeev","Persepolis")
+]};
+SQUADS["Colombia"]={coach:"Nestor Lorenzo",src:"f365",players:[
+ p(1,"GK","David Ospina","Atletico Nacional"),p(12,"GK","Camilo Vargas","Atlas"),p(24,"GK","Alvaro Montero","Velez Sarsfield"),p(2,"DF","Daniel Munoz","Crystal Palace"),p(3,"DF","Jhon Lucumi","Bologna"),p(4,"DF","Santiago Arias","Independiente"),p(13,"DF","Yerry Mina","Cagliari"),p(17,"DF","Johan Mojica","Mallorca"),p(18,"DF","Willer Ditta","Cruz Azul"),p(22,"DF","Deiver Machado","Nantes"),p(23,"DF","Davinson Sanchez","Galatasaray"),p(5,"MF","Kevin Castano","River Plate"),p(6,"MF","Richard Rios","Benfica"),p(8,"MF","Jorge Carrascal","Flamengo"),p(10,"MF","James Rodriguez","Minnesota United"),p(11,"MF","Jhon Arias","Palmeiras"),p(14,"MF","Gustavo Puerta","Racing Santander"),p(15,"MF","Juan Camilo Portilla","Athletico Paranaense"),p(16,"MF","Jefferson Lerma","Crystal Palace"),p(20,"MF","Juan Fernando Quintero","River Plate"),p(21,"MF","Jaminton Campaz","Rosario Central"),p(7,"FW","Luis Díaz","Bayern Munich"),p(9,"FW","Jhon Cordoba","Krasnodar"),p(19,"FW","Cucho Hernandez","Real Betis"),p(25,"FW","Luis Suarez","Sporting CP"),p(26,"FW","Carlos Andres Gomez","Vasco de Gama")
+]};
+SQUADS["Ghana"]={coach:"Carlos Queiroz",src:"f365",players:[
+ p(1,"GK","Lawrence Ati-Zigi","St Gallen"),p(12,"GK","Joseph Anang","St Patrick’s Athletic"),p(16,"GK","Benjamin Asare","Hearts of Oak"),p(2,"DF","Alidu Seidu","Rennes"),p(4,"DF","Jonas Adjetey","Wolfsburg"),p(6,"DF","Abdul Mumin","Rayo Vallecano"),p(14,"DF","Gideon Mensah","Auxerre"),p(17,"DF","Abdul Rahman Baba","PAOK"),p(18,"DF","Jerome Opoku","Istanbul Basaksehir"),p(21,"DF","Kojo Peprah Oppong","Nice"),p(23,"DF","Derrick Luckassen","Pafos"),p(26,"DF","Marvin Senaya","Auxerre"),p(3,"MF","Caleb Yirenkyi","Nordsjaelland"),p(5,"MF","Thomas Partey","Villarreal"),p(7,"MF","Abdul Fatawu","Leicester City"),p(8,"MF","Kwasi Sibo","Oviedo"),p(11,"MF","Antoine Semenyo","Manchester City"),p(15,"MF","Elisha Owusu","Auxerre"),p(20,"MF","Augustine Boakye","Saint-Etienne"),p(9,"FW","Jordan Ayew","Leicester City"),p(10,"FW","Brandon Thomas-Asante","Coventry City"),p(13,"FW","Christopher Bonsu Baah","Al-Qadsiah"),p(19,"FW","Inaki Williams","Athletic Bilbao"),p(22,"FW","Kamaldeen Sulemana","Atalanta"),p(null,"FW","Ernest Nuamah","Lyon"),p(25,"FW","Prince Kwabena Adu","Viktoria Plzen")
+]};
+SQUADS["Panama"]={coach:"Thomas Christiansen",src:"f365",players:[
+ p(1,"GK","Luis Mejia","Nacional"),p(12,"GK","Cesar Samudio","Marathon"),p(22,"GK","Orlando Mosquera","Al-Fayha"),p(2,"DF","Cesar Blackman","Slovan Bratislava"),p(3,"DF","Jose Cordoba","Norwich City"),p(4,"DF","Fidel Escobar","Saprissa"),p(5,"DF","Edgardo Farina","Pari Nizhny Novgorod"),p(13,"DF","Jiovany Ramos","Puerto Cabello"),p(14,"DF","Carlos Harvey","Minnesota United"),p(15,"DF","Eric Davis","Plaza Amador"),p(16,"DF","Andres Andrade","LASK"),p(23,"DF","Michael Amir Murillo","Besiktas"),p(25,"DF","Roderick Miller","Turan Tovuz"),p(26,"DF","Jorge Gutierrez","Deportivo La Guaira"),p(6,"MF","Cristian Martinez","Ironi Kiryat Shmona"),p(7,"MF","Jose Luis Rodriguez","Juarez"),p(8,"MF","Adalberto Carrasquilla","UNAM"),p(10,"MF","Ismael Diaz","Leon"),p(11,"MF","Yoel Barcenas","Mazatian"),p(19,"MF","Alberto Quintero","Plaza Amador"),p(20,"MF","Anibal Godoy","San Diego FC"),p(21,"MF","Cesar Yanis","Cobresal"),p(9,"FW","Tomas Rodriguez","Saprissa"),p(17,"FW","Jose Fajardo","Universidad Catolica"),p(18,"FW","Cecilio Waterman","Universidad de Concepcion"),p(24,"FW","Azarias Londono","Universidad Catolica")
+]};
+
+const POS={GK:"Goalkeepers",DF:"Defenders",MF:"Midfielders",FW:"Forwards"};
+const POS_ORDER=["GK","DF","MF","FW"];
+
+/* ---------- HELPERS ---------- */
+const NOW=()=>new Date();
+const fl=t=>FLAG[t]||"";
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function matchState(m){
+  // Prefer authoritative ESPN state when present
+  if(m.espnState==='in') return "live";
+  if(m.espnState==='post') return "ft";
+  if(m.espnState==='pre') return "upcoming";
+  const k=new Date(m.gmt), end=new Date(k.getTime()+115*60000), now=NOW();
+  if(m.hs!=null&&m.as!=null) return "ft";
+  if(now>=k&&now<end) return "live";
+  if(now>=end) return "await";
+  return "upcoming";
+}
+function tspan(t,align){
+  const inner = align==='r' ? esc(t)+' <span class="fl">'+fl(t)+'</span>' : '<span class="fl">'+fl(t)+'</span> '+esc(t);
+  return `<span class="m-team tlink" data-team="${esc(t)}">${inner}</span>`;
+}
+
+/* ---------- SCHEDULE ---------- */
+function renderSchedule(){
+  const g=document.getElementById('fGroup').value;
+  const t=document.getElementById('fTeam').value;
+  const up=document.getElementById('fUpcoming').checked;
+  const body=document.getElementById('scheduleBody'); body.innerHTML='';
+  let days={}, order=[], shown=0;
+  MATCHES.forEach(m=>{
+    const grp=TEAM_GROUP[m.h];
+    if(g&&grp!==g) return;
+    if(t&&m.h!==t&&m.a!==t) return;
+    const st=matchState(m);
+    if(up&&(st!=='upcoming')) return;
+    if(!days[m.date]){days[m.date]=[];order.push(m.date);}
+    days[m.date].push({m,st,grp}); shown++;
+  });
+  order.forEach(d=>{
+    const dg=document.createElement('div'); dg.className='daygroup';
+    dg.innerHTML=`<div class="dh"><span>${d}</span><span class="gchip">${days[d].length} match${days[d].length>1?'es':''}</span></div>`;
+    days[d].forEach(({m,st,grp})=>{
+      let center;
+      if(st==='ft') center=`<div class="m-score">${m.hs}–${m.as}</div><div><span class="badge b-ft">FT</span></div>`;
+      else if(st==='live') center=`<div class="m-score">${m.hs??0}–${m.as??0}</div><div><span class="badge b-live">● Live</span>${m.clock?` <span class="m-clock">${esc(m.clock)}</span>`:''}</div>`;
+      else center=`<div class="m-vs">v</div><div class="m-time">${m.local}</div>`;
+      const el=document.createElement('div');
+      el.className='match'+(isToday(m)?' today':'');
+      el.innerHTML=`
+        <div class="m-home">${tspan(m.h,'r')}</div>
+        <div class="m-center">${center}<div class="m-venue"><span class="vlink" data-venue="${esc(m.v)}">${esc(m.v)}</span>, ${esc(m.c)}</div></div>
+        <div class="m-away">${tspan(m.a,'l')}</div>
+        <div style="grid-column:1/-1;text-align:center;margin-top:2px"><span class="badge b-grp">Group ${grp}</span></div>`;
+      dg.appendChild(el);
+    });
+    body.appendChild(dg);
+  });
+  document.getElementById('schedCount').textContent=shown+' of '+MATCHES.length+' matches';
+}
+function isToday(m){const k=new Date(m.gmt),n=NOW();return k.toDateString()===n.toDateString();}
+
+/* ---------- STANDINGS ---------- */
+function computeStandings(g){
+  const rows={}; GROUPS[g].forEach(t=>rows[t]={t,P:0,W:0,D:0,L:0,GF:0,GA:0,Pts:0});
+  MATCHES.forEach(m=>{
+    if(TEAM_GROUP[m.h]!==g) return;
+    if(m.hs==null||m.as==null) return;
+    const H=rows[m.h],A=rows[m.a];
+    H.P++;A.P++;H.GF+=m.hs;H.GA+=m.as;A.GF+=m.as;A.GA+=m.hs;
+    if(m.hs>m.as){H.W++;A.L++;H.Pts+=3;}
+    else if(m.hs<m.as){A.W++;H.L++;A.Pts+=3;}
+    else{H.D++;A.D++;H.Pts++;A.Pts++;}
+  });
+  return Object.values(rows).map(r=>({...r,GD:r.GF-r.GA}))
+    .sort((a,b)=>b.Pts-a.Pts||b.GD-a.GD||b.GF-a.GF||a.t.localeCompare(b.t));
+}
+function renderGroups(){
+  const grid=document.getElementById('groupsGrid'); grid.innerHTML='';
+  Object.keys(GROUPS).forEach(g=>{
+    const rows=computeStandings(g);
+    const card=document.createElement('div'); card.className='card';
+    let html=`<div class="gtitle"><span class="gl">${g}</span>Group ${g}</div>
+      <table class="stand"><thead><tr><th class="team">Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th></tr></thead><tbody>`;
+    rows.forEach((r,i)=>{
+      const cls=i===0?'q1':(i===1?'q2':'');
+      html+=`<tr class="${cls}"><td class="team"><span class="tlink" data-team="${esc(r.t)}">${fl(r.t)} ${esc(r.t)}</span></td><td>${r.P}</td><td>${r.W}</td><td>${r.D}</td><td>${r.L}</td><td>${r.GF}</td><td>${r.GA}</td><td>${r.GD>0?'+':''}${r.GD}</td><td class="pts">${r.Pts}</td></tr>`;
+    });
+    html+='</tbody></table>';
+    card.innerHTML=html; grid.appendChild(card);
+  });
+}
+
+/* ---------- TEAMS ---------- */
+function renderTeams(){
+  const grid=document.getElementById('teamsGrid'); grid.innerHTML='';
+  Object.entries(GROUPS).forEach(([g,ts])=>{
+    const c=document.createElement('div'); c.className='tcard';
+    c.innerHTML=`<div class="gh">Group ${g}</div>`+ts.map(t=>
+      `<div class="row tlink" data-team="${esc(t)}"><span class="fl">${fl(t)}</span>${esc(t)}${SQUADS[t]?'<span class="star">★ roster</span>':''}</div>`).join('');
+    grid.appendChild(c);
+  });
+}
+
+/* ---------- BRACKET ---------- */
+function renderBracket(){
+  const cols=[["Round of 32",16],["Round of 16",8],["Quarterfinals",4],["Semifinals",2],["Final",1]];
+  const box=document.getElementById('bracketBox'); box.innerHTML='';
+  cols.forEach(([name,n])=>{
+    const c=document.createElement('div'); c.className='bcol';
+    let h=`<h4>${name}</h4>`;
+    for(let i=0;i<n;i++) h+=`<div class="bmatch"><div class="slot">TBD</div><div class="slot">TBD</div></div>`;
+    c.innerHTML=h; box.appendChild(c);
+  });
+  document.getElementById('koDates').innerHTML=KO_DATES.map(([a,b])=>`<div style="padding:3px 0;border-bottom:1px dashed var(--line)"><b style="color:var(--ink)">${a}</b> — ${b}</div>`).join('');
+}
+
+/* ---------- STATS ---------- */
+function renderVenues(){
+  document.getElementById('venueList').innerHTML=VENUES.map(([v,c,co])=>{
+    const f={USA:"🇺🇸",Canada:"🇨🇦",Mexico:"🇲🇽"}[co];
+    return `<div class="v"><span class="flag-host">${f}</span> <b class="vlink" data-venue="${esc(v)}">${esc(v)}</b><br><span class="hint">${esc(c)}, ${co}</span></div>`;
+  }).join('');
+}
+const VEN_COUNTRY={}; VENUES.forEach(([v,c,co])=>VEN_COUNTRY[c]=co);
+const TITLES=[["Brazil",5],["Germany",4],["Argentina",3],["France",2],["Uruguay",2],["England",1],["Spain",1]];
+const CHARTS={};
+function mkChart(id,cfg){const c=document.getElementById(id);if(!c)return;if(CHARTS[id])CHARTS[id].destroy();CHARTS[id]=new Chart(c,cfg);}
+function statKPIs(){
+  let players=0; const clubs=new Set();
+  Object.values(SQUADS).forEach(sq=>sq.players.forEach(p=>{players++;clubs.add(p.club);}));
+  const goals=MATCHES.reduce((s,m)=>s+((m.hs||0)+(m.as||0))*(m.hs!=null&&m.as!=null?1:0),0);
+  document.getElementById('kpiPlayers').textContent=players;
+  document.getElementById('kpiClubs').textContent=clubs.size;
+  document.getElementById('kpiGoals').textContent=goals;
+}
+function renderStatsCharts(){
+  statKPIs();
+  // by host city
+  const cc={}; MATCHES.forEach(m=>cc[m.c]=(cc[m.c]||0)+1);
+  const cl=Object.keys(cc).sort((a,b)=>cc[b]-cc[a]);
+  mkChart('cityChart',{type:'bar',data:{labels:cl,datasets:[{data:cl.map(l=>cc[l]),backgroundColor:'#0a8f53',borderRadius:5}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{y:{beginAtZero:true,ticks:{stepSize:1}},x:{ticks:{maxRotation:60,minRotation:45,font:{size:10}}}}}});
+  // by host nation (group stage)
+  const nc={}; MATCHES.forEach(m=>{const co=VEN_COUNTRY[m.c]||'Other';nc[co]=(nc[co]||0)+1;});
+  const nl=Object.keys(nc).sort((a,b)=>nc[b]-nc[a]);
+  mkChart('nationChart',{type:'doughnut',data:{labels:nl,datasets:[{data:nl.map(l=>nc[l]),backgroundColor:['#067a46','#c9a227','#0bbf6a','#9aa6a1']}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11}}}}}});
+  // past WC titles among participants
+  mkChart('titlesChart',{type:'bar',data:{labels:TITLES.map(x=>x[0]),datasets:[{data:TITLES.map(x=>x[1]),backgroundColor:'#c9a227',borderRadius:5}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{y:{beginAtZero:true,ticks:{stepSize:1}},x:{ticks:{maxRotation:60,minRotation:45,font:{size:10}}}}}});
+  // clubs supplying most players
+  const club={}; Object.values(SQUADS).forEach(sq=>sq.players.forEach(p=>club[p.club]=(club[p.club]||0)+1));
+  const top=Object.entries(club).sort((a,b)=>b[1]-a[1]).slice(0,12);
+  mkChart('clubsChart',{type:'bar',data:{labels:top.map(x=>x[0]),datasets:[{data:top.map(x=>x[1]),backgroundColor:'#067a46',borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{x:{beginAtZero:true,ticks:{stepSize:1}},y:{ticks:{font:{size:11}}}}}});
+}
+
+/* ---------- TEAM STATS ---------- */
+function teamStats(team){
+  const g=TEAM_GROUP[team];
+  const s={P:0,W:0,D:0,L:0,GF:0,GA:0,Pts:0};
+  const fixtures=MATCHES.filter(m=>m.h===team||m.a===team).sort((a,b)=>new Date(a.gmt)-new Date(b.gmt));
+  const form=[];
+  fixtures.forEach(m=>{
+    if(m.hs==null||m.as==null) return;
+    const home=m.h===team, gf=home?m.hs:m.as, ga=home?m.as:m.hs;
+    s.P++;s.GF+=gf;s.GA+=ga;
+    if(gf>ga){s.W++;s.Pts+=3;form.push('W');}
+    else if(gf<ga){s.L++;form.push('L');}
+    else{s.D++;s.Pts++;form.push('D');}
+  });
+  s.GD=s.GF-s.GA;
+  const table=computeStandings(g);
+  s.pos=table.findIndex(r=>r.t===team)+1;
+  return {s,fixtures,form,group:g};
+}
+
+/* ---------- OVERLAY ---------- */
+const ovBack=document.getElementById('ovBack');
+function openOverlay(){ovBack.classList.add('open');}
+function closeOverlay(){ovBack.classList.remove('open');document.getElementById('ovBackBtn').style.display='none';}
+let currentTeam=null;
+
+function openTeam(team){
+  currentTeam=team;
+  document.getElementById('ovBackBtn').style.display='none';
+  const {s,fixtures,form,group}=teamStats(team);
+  const sq=SQUADS[team];
+  document.getElementById('ovTitle').innerHTML=`<span class="fl">${fl(team)}</span>${esc(team)}`;
+  document.getElementById('ovSub').textContent=`Group ${group}${sq?' · '+sq.coach:''}`;
+  const ord=['st','nd','rd','th'][Math.min(s.pos-1,3)]||'th';
+  let html=`<div class="statgrid">
+    <div class="stat"><div class="v">${s.pos?s.pos+ord:'–'}</div><div class="k">In Group ${group}</div></div>
+    <div class="stat"><div class="v">${s.Pts}</div><div class="k">Points</div></div>
+    <div class="stat"><div class="v">${s.W}-${s.D}-${s.L}</div><div class="k">W-D-L</div></div>
+    <div class="stat"><div class="v">${s.GF}:${s.GA}</div><div class="k">Goals</div></div>
+  </div>`;
+  const co=COORDS[team];
+  if(co){
+    html+=`<div class="sec-h">Home base — ${esc(co[2])}</div>${mapFrame(co[0],co[1],0.7,160)}`+
+      `<div class="mapcap">📍 ${esc(co[2])}, ${esc(team)} · <a href="${osmLink(co[0],co[1],6)}" target="_blank" rel="noopener noreferrer">larger map</a></div>`;
+  }
+  if(form.length){
+    html+=`<div class="sec-h">Form</div><div class="form">`+form.map(f=>`<span class="fpill f${f}">${f}</span>`).join('')+`</div>`;
+  }
+  html+=`<div class="sec-h">Group-stage fixtures</div>`;
+  fixtures.forEach(m=>{
+    const home=m.h===team, opp=home?m.a:m.h, st=matchState(m);
+    let res;
+    if(st==='ft'||st==='live'){const gf=home?m.hs:m.as,ga=home?m.as:m.hs;res=`<span class="res">${gf??0}–${ga??0}</span>`;}
+    else res=`<span class="res" style="color:var(--muted);font-weight:600">${m.local}</span>`;
+    html+=`<div class="fixrow"><span>${home?'vs':'@'}</span><span class="tlink" data-team="${esc(opp)}">${fl(opp)} ${esc(opp)}</span>${res}<span class="dt" style="width:100%;flex-basis:100%">${m.date} · <span class="vlink" data-venue="${esc(m.v)}">${esc(m.v)}</span>, ${esc(m.c)}</span></div>`;
+  });
+  html+=`<div class="sec-h">Squad</div>`;
+  if(sq){
+    POS_ORDER.forEach(pos=>{
+      const pl=sq.players.filter(x=>x.pos===pos);
+      if(!pl.length) return;
+      html+=`<div class="posgroup"><div class="ph">${POS[pos]}</div>`;
+      pl.forEach(pp=>{
+        const idx=sq.players.indexOf(pp);
+        html+=`<div class="prow" data-player="${idx}"><span class="num">${pp.n??'–'}</span><span class="pn">${esc(pp.name)}</span><span class="club">${esc(pp.club)}</span><span class="arr">›</span></div>`;
+      });
+      html+=`</div>`;
+    });
+    html+=`<div class="ph-note" style="margin-top:8px">Squad from official June 2026 announcement. Tap a player for their profile and tournament stats.</div>`;
+  } else {
+    html+=`<div class="ph-note">Detailed roster not loaded for ${esc(team)} yet. The 12 tournament contenders have full squads — ask me to add ${esc(team)}'s roster and I'll load it.</div>`;
+  }
+  document.getElementById('ovBody').innerHTML=html;
+  document.getElementById('ovBody').scrollTop=0;
+  openOverlay();
+}
+
+function openPlayer(idx){
+  const sq=SQUADS[currentTeam]; if(!sq)return;
+  const pp=sq.players[idx]; if(!pp)return;
+  document.getElementById('ovBackBtn').style.display='block';
+  document.getElementById('ovTitle').innerHTML=`<span class="fl">${fl(currentTeam)}</span>${esc(pp.name)}`;
+  document.getElementById('ovSub').textContent=`${POS[pp.pos]} · ${currentTeam}${pp.n!=null?' · #'+pp.n:''}`;
+  let chips=`<div class="chips">
+    <span class="chip">Position <b>${pp.pos}</b></span>
+    <span class="chip">Club <b>${esc(pp.club)}</b></span>
+    <span class="chip">Shirt <b>${pp.n!=null?'#'+pp.n:'—'}</b></span>
+    ${pp.age!=null?`<span class="chip">Age <b>${pp.age}</b></span>`:''}
+    ${pp.caps!=null?`<span class="chip">Caps <b>${pp.caps}</b></span>`:''}
+  </div>`;
+  let html=chips+`<div class="sec-h">World Cup 2026</div>
+    <div class="statgrid">
+      <div class="stat"><div class="v">${pp.apps||0}</div><div class="k">Apps</div></div>
+      <div class="stat"><div class="v">${pp.g||0}</div><div class="k">Goals</div></div>
+      <div class="stat"><div class="v">${pp.a||0}</div><div class="k">Assists</div></div>
+      <div class="stat"><div class="v">${(pp.yc||0)}/${(pp.rc||0)}</div><div class="k">Yel/Red</div></div>
+    </div>
+    <div class="ph-note">Per-match stats (goals, assists, appearances) accrue as the tournament is played. ${pp.caps!=null?'Career caps shown above reflect pre-tournament internationals.':'Club and squad number are from the official squad list.'}</div>`;
+  document.getElementById('ovBody').innerHTML=html;
+  document.getElementById('ovBody').scrollTop=0;
+}
+
+/* ---------- VENUE MAP OVERLAY ---------- */
+const venueBack=document.getElementById('venueBack');
+function openVenue(name){
+  const g=VENUE_GEO[name];const meta=VENUES.find(v=>v[0]===name);
+  document.getElementById('venueTitle').textContent=name;
+  document.getElementById('venueSub').textContent=meta?(meta[1]+', '+meta[2]):'';
+  const body=document.getElementById('venueBody');
+  if(g){
+    body.innerHTML=mapFrame(g[0],g[1],0.02,320)+`<div class="mapcap">📍 ${esc(name)}${meta?' · '+esc(meta[1])+', '+esc(meta[2]):''} · <a href="${osmLink(g[0],g[1],15)}" target="_blank" rel="noopener noreferrer">larger map</a></div>`;
+  } else body.innerHTML='<div class="ph-note">Location unavailable for this venue.</div>';
+  venueBack.classList.add('open');
+}
+function closeVenue(){venueBack.classList.remove('open');}
+
+/* ---------- DELEGATED CLICKS ---------- */
+document.addEventListener('click',e=>{
+  const vl=e.target.closest('.vlink');
+  if(vl){openVenue(vl.dataset.venue);return;}
+  const pl=e.target.closest('.prow');
+  if(pl&&ovBack.contains(pl)){openPlayer(+pl.dataset.player);return;}
+  const tl=e.target.closest('.tlink');
+  if(tl){openTeam(tl.dataset.team);return;}
+});
+document.getElementById('ovClose').onclick=closeOverlay;
+document.getElementById('ovBackBtn').onclick=()=>{if(currentTeam)openTeam(currentTeam);};
+ovBack.addEventListener('click',e=>{if(e.target===ovBack)closeOverlay();});
+document.getElementById('venueClose').onclick=closeVenue;
+venueBack.addEventListener('click',e=>{if(e.target===venueBack)closeVenue();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(venueBack.classList.contains('open'))closeVenue();else closeOverlay();}});
+
+/* ---------- HEADER STATUS ---------- */
+function renderStatus(){
+  const now=NOW();
+  const played=MATCHES.filter(m=>m.hs!=null&&m.as!=null).length;
+  document.getElementById('kpiPlayed').textContent=played;
+  const live=MATCHES.find(m=>matchState(m)==='live');
+  const next=MATCHES.filter(m=>new Date(m.gmt)>now).sort((a,b)=>new Date(a.gmt)-new Date(b.gmt))[0];
+  let s;
+  if(live) s='🔴 Match in progress';
+  else if(now<new Date('2026-06-11T19:00Z')) s='Kicks off June 11';
+  else if(now>new Date('2026-07-19T21:00Z')) s='Tournament complete';
+  else s='Group stage underway';
+  document.getElementById('statusLine').textContent=s;
+  document.getElementById('nextLine').textContent=next?('Next: '+fl(next.h)+' '+next.h+' v '+next.a+' '+fl(next.a)):'';
+}
+
+/* ---------- FILTERS / TABS ---------- */
+function initFilters(){
+  const fg=document.getElementById('fGroup');
+  Object.keys(GROUPS).forEach(g=>fg.insertAdjacentHTML('beforeend',`<option value="${g}">Group ${g}</option>`));
+  const ft=document.getElementById('fTeam');
+  Object.keys(TEAM_GROUP).sort().forEach(t=>ft.insertAdjacentHTML('beforeend',`<option value="${t}">${t}</option>`));
+  fg.onchange=ft.onchange=renderSchedule;
+  document.getElementById('fUpcoming').onchange=renderSchedule;
+}
+document.getElementById('tabs').addEventListener('click',e=>{
+  const tab=e.target.closest('.tab'); if(!tab)return;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+  tab.classList.add('active');
+  document.getElementById(tab.dataset.p).classList.add('active');
+  if(tab.dataset.p==='stats') renderStatsCharts();
+});
+
+/* ---------- LIVE DATA (ESPN public scoreboard) ---------- */
+function normalize(s){return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');}
+const CANON_NORM={};Object.keys(TEAM_GROUP).forEach(t=>CANON_NORM[normalize(t)]=t);
+const ALIAS={unitedstates:"USA",usmnt:"USA",turkey:"Turkiye",turkiye:"Turkiye",cotedivoire:"Ivory Coast",ivorycoast:"Ivory Coast",congodr:"DR Congo",drcongo:"DR Congo",democraticrepublicofthecongo:"DR Congo",democraticrepublicofcongo:"DR Congo",caboverde:"Cape Verde",capeverde:"Cape Verde",curacao:"Curacao",bosniaherzegovina:"Bosnia",bosniaandherzegovina:"Bosnia",bosnia:"Bosnia",southkorea:"South Korea",korearepublic:"South Korea",republicofkorea:"South Korea",iranislamicrepublic:"Iran",czechrepublic:"Czechia",czechia:"Czechia"};
+function resolveTeam(n){const k=normalize(n);return CANON_NORM[k]||ALIAS[k]||null;}
+const FIX_BY_PAIR={};MATCHES.forEach((m,i)=>{FIX_BY_PAIR[[m.h,m.a].sort().join('|')]=i;});
+const ESPN_EVENTS={};let ESPN_SCORERS={};let lastOk=null;
+function ymd(d){return ''+d.getUTCFullYear()+String(d.getUTCMonth()+1).padStart(2,'0')+String(d.getUTCDate()).padStart(2,'0');}
+const ALL_DAYS=(()=>{const a=[];for(let i=11;i<=27;i++)a.push('202606'+String(i).padStart(2,'0'));return a;})();
+function currentWindow(){const now=NOW(),a=[];for(let o=-1;o<=1;o++)a.push(ymd(new Date(now.getTime()+o*864e5)));return a;}
+async function fetchDay(d){const u='https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates='+d;const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw new Error('http'+r.status);const j=await r.json();return j.events||[];}
+function applyEvent(ev){
+  try{
+    const comp=ev.competitions&&ev.competitions[0];if(!comp)return;
+    const cs=comp.competitors||[];if(cs.length<2)return;
+    const t0=resolveTeam(cs[0].team&&(cs[0].team.displayName||cs[0].team.name));
+    const t1=resolveTeam(cs[1].team&&(cs[1].team.displayName||cs[1].team.name));
+    if(!t0||!t1)return;
+    const idx=FIX_BY_PAIR[[t0,t1].sort().join('|')];if(idx==null)return;
+    const m=MATCHES[idx];const st=comp.status&&comp.status.type&&comp.status.type.state;
+    m.espnState=st;m.eventId=ev.id;
+    m.clock=(st==='in')?((comp.status&&comp.status.displayClock)||''):'';
+    if(st==='in'||st==='post'){
+      const sc={};cs.forEach(c=>{const t=resolveTeam(c.team&&(c.team.displayName||c.team.name));if(t)sc[t]=parseInt(c.score,10);});
+      if(!isNaN(sc[m.h])&&!isNaN(sc[m.a])){m.hs=sc[m.h];m.as=sc[m.a];}
+    }else if(st==='pre'){m.hs=null;m.as=null;}
+    (comp.details||[]).forEach(d=>{
+      if(!d.scoringPlay)return;const tp=(d.type&&d.type.text)||'';if(/shootout/i.test(tp))return;
+      const ath=d.athletesInvolved&&d.athletesInvolved[0];if(!ath)return;const nm=ath.displayName||ath.shortName;if(!nm)return;
+      const tc=resolveTeam(d.team&&(d.team.displayName||d.team.name))||'';
+      const k=nm+'|'+tc;(ESPN_SCORERS[k]=ESPN_SCORERS[k]||{name:nm,team:tc,goals:0});
+      if(!/own goal/i.test(tp))ESPN_SCORERS[k].goals++;
+    });
+  }catch(e){}
+}
+function rebuild(){
+  ESPN_SCORERS={};
+  Object.values(SQUADS).forEach(sq=>sq.players.forEach(p=>p.g=0));
+  Object.values(ESPN_EVENTS).forEach(applyEvent);
+  Object.values(ESPN_SCORERS).forEach(s=>{const sq=SQUADS[s.team];if(!sq)return;const pl=sq.players.find(p=>normalize(p.name)===normalize(s.name));if(pl)pl.g=s.goals;});
+}
+function renderScorers(){
+  const el=document.getElementById('scorers');if(!el)return;
+  const arr=Object.values(ESPN_SCORERS).filter(s=>s.goals>0).sort((a,b)=>b.goals-a.goals||a.name.localeCompare(b.name)).slice(0,15);
+  if(!arr.length){el.className='hint';el.textContent='No goals recorded yet — the race begins with the opening matches.';return;}
+  el.className='';el.innerHTML=arr.map((s,i)=>`<div class="scorer"><span class="rk">${i+1}</span><span>${esc(s.name)} <span class="tm tlink" data-team="${esc(s.team)}">${fl(s.team)} ${esc(s.team)}</span></span><span class="gg">${s.goals}</span></div>`).join('');
+}
+function updateLiveUI(stx){
+  const dot=document.getElementById('liveDot'),txt=document.getElementById('liveText');if(!dot)return;
+  if(stx==='ok'){lastOk=NOW();dot.className='live-dot on';txt.textContent='Live · ESPN · '+lastOk.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+  else{dot.className='live-dot err';txt.textContent='Live data unavailable — showing schedule'+(lastOk?(' · last '+lastOk.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})):'');}
+}
+/* ---- live commentary (per-match summary endpoint) ---- */
+async function fetchSummary(eventId){
+  const u='https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary?event='+eventId;
+  const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw new Error('http'+r.status);return r.json();
+}
+function evIcon(type,txt){
+  const s=((type||'')+' '+(txt||'')).toLowerCase();
+  if(/own goal/.test(s))return'⚽';
+  if(/goal|penalty - scored/.test(s))return'⚽';
+  if(/yellow/.test(s))return'🟨';
+  if(/red/.test(s))return'🟥';
+  if(/(substitution|sub )/.test(s))return'🔄';
+  if(/penalty/.test(s))return'⚡';
+  if(/(half|full|kick)/.test(s))return'⏱️';
+  return'•';
+}
+function extractFeed(j){
+  const out=[];
+  const src=(j.keyEvents&&j.keyEvents.length)?j.keyEvents:(j.commentary||[]);
+  src.forEach(e=>{
+    const clock=(e.clock&&(e.clock.displayValue))||(e.time&&(e.time.displayValue))||'';
+    const type=(e.type&&(e.type.text))||'';
+    let txt=e.text||(e.play&&e.play.text)||type;
+    if(Array.isArray(e.participants)&&e.participants.length&&!e.text){
+      const who=e.participants.map(p=>p.athlete&&p.athlete.displayName).filter(Boolean).join(', ');
+      if(who)txt=(type?type+': ':'')+who;
+    }
+    const team=(e.team&&(e.team.displayName))||'';
+    if(txt)out.push({clock,type,txt,team});
+  });
+  return out;
+}
+async function refreshLiveFeeds(){
+  const live=MATCHES.filter(m=>matchState(m)==='live'&&m.eventId);
+  await Promise.all(live.map(async m=>{
+    try{const j=await fetchSummary(m.eventId);m.feed=extractFeed(j);}catch(e){/* keep prior feed */}
+  }));
+}
+function renderLiveNow(){
+  const box=document.getElementById('liveNow');if(!box)return;
+  const live=MATCHES.filter(m=>matchState(m)==='live');
+  if(!live.length){box.innerHTML='';return;}
+  let html=`<div class="livecard"><div class="lh"><span class="live-dot on"></span>Live now · ${live.length} match${live.length>1?'es':''}</div>`;
+  live.forEach(m=>{
+    html+=`<div class="lmatch"><div class="lscore">
+      <span class="nm h tlink" data-team="${esc(m.h)}">${esc(m.h)} ${fl(m.h)}</span>
+      <span><span class="sc">${m.hs??0}–${m.as??0}</span><div class="mn">${esc(m.clock||"LIVE")}</div></span>
+      <span class="nm tlink" data-team="${esc(m.a)}">${fl(m.a)} ${esc(m.a)}</span>
+    </div>
+    <div class="mapcap" style="text-align:center;margin:0 0 8px">📍 <span class="vlink" data-venue="${esc(m.v)}">${esc(m.v)}</span>, ${esc(m.c)}</div>`;
+    const feed=(m.feed||[]).slice().reverse().slice(0,8);
+    if(feed.length){
+      html+=`<div class="feed">`+feed.map(f=>`<div class="fevent"><span class="fc">${esc(f.clock||'')}</span><span class="fi">${evIcon(f.type,f.txt)}</span><span class="ft2">${esc(f.txt)}${f.team?` <span class="gchip">(${esc(f.team)})</span>`:''}</span></div>`).join('')+`</div>`;
+    } else {
+      html+=`<div class="feed-empty">Awaiting live commentary from ESPN…</div>`;
+    }
+    html+=`</div>`;
+  });
+  html+=`</div>`;
+  box.innerHTML=html;
+}
+function renderAll(){renderLiveNow();renderSchedule();renderGroups();renderStatus();renderScorers();if(document.getElementById('stats').classList.contains('active'))renderStatsCharts();}
+async function poll(days){
+  try{
+    const lists=await Promise.all(days.map(d=>fetchDay(d).catch(()=>null)));
+    let okAny=false;lists.forEach(evs=>{if(evs){okAny=true;evs.forEach(ev=>{if(ev&&ev.id)ESPN_EVENTS[ev.id]=ev;});}});
+    if(!okAny)throw new Error('all failed');
+    rebuild();
+    await refreshLiveFeeds();
+    renderAll();updateLiveUI('ok');
+  }catch(e){updateLiveUI('err');}
+}
+async function startLive(){
+  await poll(ALL_DAYS);                                  // one-time backfill of all group-stage results
+  if(window.__wcTimer)clearInterval(window.__wcTimer);
+  window.__wcTimer=setInterval(()=>poll(currentWindow()),30000);  // poll active window every 30s
+}
+
+/* ---------- INIT ---------- */
+initFilters();
+renderSchedule();
+renderGroups();
+renderTeams();
+renderBracket();
+renderVenues();
+renderStatus();
+renderScorers();
+setInterval(()=>{renderStatus();renderSchedule();},60000);  // local clock fallback when API is unavailable
+startLive();
+</script>
+</body>
+</html>
