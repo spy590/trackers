@@ -28,6 +28,31 @@ header.hero{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 18px;
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 13px;box-shadow:var(--shadow);}
 .kpi .n{font-size:20px;font-weight:800;color:var(--accent);}
 .kpi .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:1px;}
+.kpi.tap{cursor:pointer;transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease;position:relative;}
+.kpi.tap:hover{transform:translateY(-1px);border-color:var(--accent);box-shadow:0 4px 12px rgba(16,34,27,.12);}
+.kpi.tap:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.kpi.tap::after{content:"›";position:absolute;top:9px;right:11px;color:var(--muted);font-size:15px;font-weight:800;opacity:.5;}
+/* list overlay rows */
+.lrow{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;margin-bottom:6px;font-size:13px;}
+.lrow.tap{cursor:pointer;}
+.lrow.tap:hover{border-color:var(--accent);background:var(--accent-soft);}
+.lrow .fl{font-size:18px;flex:0 0 auto;}
+.lrow .nm{font-weight:600;}
+.lrow .meta{margin-left:auto;color:var(--muted);font-size:11.5px;text-align:right;}
+.lrow.out{opacity:.55;}
+.lrow.out .nm{text-decoration:line-through;}
+.spill{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;padding:2px 7px;border-radius:999px;flex:0 0 auto;}
+.spill.through{background:var(--accent-soft);color:var(--accent2);}
+.spill.out{background:#fbeaea;color:var(--live);}
+.spill.live{background:var(--live);color:#fff;}
+.spill.ft{background:var(--chip);color:var(--muted);}
+.lsub{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:12px 0 7px;display:flex;justify-content:space-between;align-items:baseline;}
+/* weather block in stadium overlay */
+.wx{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:11px;padding:10px 13px;margin-top:11px;background:var(--accent-soft);}
+.wx .ic{font-size:30px;line-height:1;flex:0 0 auto;}
+.wx .t{font-size:21px;font-weight:800;color:var(--ink);}
+.wx .d{font-size:12px;color:var(--muted);margin-top:1px;}
+.wx .more{margin-left:auto;text-align:right;font-size:11.5px;color:var(--muted);line-height:1.5;}
 nav.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 14px;position:sticky;top:0;
   background:var(--bg);padding:8px 0;z-index:20;}
 .tab{border:1px solid var(--line);background:var(--card);color:var(--ink);
@@ -205,10 +230,10 @@ table.stand tr.q2 td:first-child{box-shadow:inset 3px 0 0 var(--gold);}
   </header>
 
   <div class="kpis">
-    <div class="kpi"><div class="n">48</div><div class="l">Teams</div></div>
-    <div class="kpi"><div class="n">104</div><div class="l">Matches</div></div>
-    <div class="kpi"><div class="n">16</div><div class="l">Host Cities</div></div>
-    <div class="kpi"><div class="n" id="kpiPlayed">0</div><div class="l">Played</div></div>
+    <div class="kpi tap" id="kpiTeamsCard" role="button" tabindex="0"><div class="n" id="kpiTeams">48</div><div class="l">Teams</div></div>
+    <div class="kpi tap" id="kpiMatchesCard" role="button" tabindex="0"><div class="n">104</div><div class="l">Matches</div></div>
+    <div class="kpi tap" id="kpiCitiesCard" role="button" tabindex="0"><div class="n">16</div><div class="l">Host Cities</div></div>
+    <div class="kpi tap" id="kpiPlayedCard" role="button" tabindex="0"><div class="n" id="kpiPlayed">0</div><div class="l">Played</div></div>
   </div>
 
   <nav class="tabs" id="tabs">
@@ -978,20 +1003,156 @@ function openVenue(name){
   document.getElementById('venueSub').textContent=meta?(meta[1]+', '+meta[2]):'';
   const body=document.getElementById('venueBody');
   if(g){
-    body.innerHTML=mapFrame(g[0],g[1],0.02,320)+`<div class="mapcap">📍 ${esc(name)}${meta?' · '+esc(meta[1])+', '+esc(meta[2]):''} · <a href="${osmLink(g[0],g[1],15)}" target="_blank" rel="noopener noreferrer">larger map</a></div>`;
+    body.innerHTML=mapFrame(g[0],g[1],0.02,320)+`<div class="mapcap">📍 ${esc(name)}${meta?' · '+esc(meta[1])+', '+esc(meta[2]):''} · <a href="${osmLink(g[0],g[1],15)}" target="_blank" rel="noopener noreferrer">larger map</a></div>`
+      +`<div id="wxSlot"><div class="wx" style="background:var(--chip)"><div class="d">Loading current weather…</div></div></div>`;
+    loadWeather(name);
   } else body.innerHTML='<div class="ph-note">Location unavailable for this venue.</div>';
   venueBack.classList.add('open');
 }
 function closeVenue(){venueBack.classList.remove('open');}
 
+/* ---------- TEAM ELIMINATION (conservative: only when mathematically certain) ---------- */
+// Returns {status:'through'|'out'|'alive', note}. 'out' is only ever set when a team
+// truly cannot reach the Round of 32 (top 2 per group + best 8 of 12 third-placed teams).
+function groupComplete(g){const ms=MATCHES.filter(m=>TEAM_GROUP[m.h]===g);return ms.length>0&&ms.every(m=>matchState(m)==='ft');}
+function teamStatus(team){
+  const g=TEAM_GROUP[team];
+  const rows=computeStandings(g);                 // already finished-only, sorted
+  const pos=rows.findIndex(r=>r.t===team)+1;      // 1-based standing
+  const me=rows.find(r=>r.t===team);
+  const gDone=groupComplete(g);
+  // Through: top 2 once the group is decided
+  if(gDone&&pos<=2) return {status:'through',note:'Top 2 — Group '+g};
+  // 4th place after all 3 group games: cannot be a best-third, definitely out
+  if(gDone&&pos===4) return {status:'out',note:'4th in Group '+g};
+  // 3rd place: only "out" once every group is finished AND it ranks outside the best 8 thirds
+  if(gDone&&pos===3){
+    if(allGroupsComplete()){
+      const thirds=Object.keys(GROUPS).map(gg=>{const r=computeStandings(gg)[2];return r?{...r,g:gg}:null;}).filter(Boolean)
+        .sort((a,b)=>b.Pts-a.Pts||b.GD-a.GD||b.GF-a.GF||a.t.localeCompare(b.t));
+      const rank=thirds.findIndex(r=>r.t===team)+1;
+      if(rank>8) return {status:'out',note:'3rd in Group '+g+' · best-thirds #'+rank};
+      return {status:'through',note:'3rd in Group '+g+' · best-thirds #'+rank};
+    }
+    return {status:'alive',note:'3rd in Group '+g+' — awaiting other groups'};
+  }
+  return {status:'alive',note:'Group '+g+(me?(' · '+me.Pts+' pts'):'')};
+}
+function allGroupsComplete(){return Object.keys(GROUPS).every(groupComplete);}
+
+/* ---------- GENERIC LIST OVERLAY (reuses team overlay shell) ---------- */
+function openList(title,sub,bodyHTML){
+  currentView=null; currentTeam=null;
+  document.getElementById('ovBackBtn').style.display='none';
+  document.getElementById('ovTitle').textContent=title;
+  document.getElementById('ovSub').textContent=sub||'';
+  document.getElementById('ovBody').innerHTML=bodyHTML;
+  document.getElementById('ovBody').scrollTop=0;
+  openOverlay();
+}
+
+/* ---------- TEAMS LIST ---------- */
+function teamsOverlay(){
+  const teams=Object.keys(TEAM_GROUP).sort();
+  const enriched=teams.map(t=>({t,...teamStatus(t)}));
+  const active=enriched.filter(e=>e.status!=='out').length;
+  const out=enriched.length-active;
+  const rows=enriched.map(e=>{
+    const pill=e.status==='through'?'<span class="spill through">Through</span>'
+      :e.status==='out'?'<span class="spill out">Out</span>':'';
+    return `<div class="lrow tap ${e.status==='out'?'out':''}" data-team="${esc(e.t)}">
+      <span class="fl">${fl(e.t)}</span><span class="nm">${esc(e.t)}</span>${pill}
+      <span class="meta">${esc(e.note)}</span></div>`;
+  }).join('');
+  openList('Teams','48 teams · '+active+' still in'+(out?(' · '+out+' eliminated'):''),
+    `<div class="lsub"><span>All teams (A–Z)</span><span>${active} active</span></div>${rows}`);
+}
+
+/* ---------- MATCH ROW (shared by Matches + Played lists) ---------- */
+function matchRow(m){
+  const st=matchState(m);
+  let right;
+  if(st==='ft') right=`<span class="meta">${m.hs}–${m.as}</span><span class="spill ft">FT</span>`;
+  else if(st==='live') right=`<span class="meta lsc" style="color:var(--live);font-weight:800">${m.hs??0}–${m.as??0}</span><span class="spill live">● Live</span>`;
+  else right=`<span class="meta">${localTime(m.gmt)}</span>`;
+  return `<div class="lrow"><span class="fl">${fl(m.h)}</span><span class="nm">${esc(m.h)}</span>
+    <span style="color:var(--muted);font-size:11px">v</span>
+    <span class="nm">${esc(m.a)}</span><span class="fl">${fl(m.a)}</span>${right}</div>`;
+}
+function groupByLocalDay(list){
+  const days={},labels={},order=[];
+  list.forEach(m=>{const k=localDayKey(m.gmt);if(!days[k]){days[k]=[];labels[k]=localDayLabel(m.gmt);order.push(k);}days[k].push(m);});
+  order.sort();
+  return order.map(k=>{
+    days[k].sort((a,b)=>new Date(a.gmt)-new Date(b.gmt));
+    return `<div class="lsub"><span>${labels[k]}</span><span>${days[k].length} match${days[k].length>1?'es':''}</span></div>`
+      +days[k].map(matchRow).join('');
+  }).join('');
+}
+function matchesOverlay(){
+  const all=MATCHES.slice().sort((a,b)=>new Date(a.gmt)-new Date(b.gmt));
+  openList('Matches',MATCHES.length+' scheduled matches'+(TZABBR?' · times in '+TZABBR:''),groupByLocalDay(all));
+}
+function playedOverlay(){
+  const done=MATCHES.filter(m=>matchState(m)==='ft').sort((a,b)=>new Date(b.gmt)-new Date(a.gmt));
+  if(!done.length){openList('Played','No matches finished yet','<div class="ph-note">No completed matches yet — results will appear here once games finish.</div>');return;}
+  openList('Played',done.length+' completed match'+(done.length>1?'es':''),
+    `<div class="lsub"><span>Results (most recent first)</span><span>${done.length} played</span></div>`+done.map(matchRow).join(''));
+}
+
+/* ---------- HOST CITIES LIST ---------- */
+const CITY_FLAG={USA:"🇺🇸",Canada:"🇨🇦",Mexico:"🇲🇽"};
+function citiesOverlay(){
+  // alpha by city; each row opens the stadium overlay for that city's venue
+  const rows=VENUES.slice().sort((a,b)=>a[1].localeCompare(b[1])).map(([v,c,co])=>{
+    const n=MATCHES.filter(m=>m.v===v).length;
+    return `<div class="lrow tap" data-venue="${esc(v)}">
+      <span class="fl">${CITY_FLAG[co]||''}</span><span class="nm">${esc(c)}</span>
+      <span class="meta">${esc(v)} · ${n} match${n!==1?'es':''}</span></div>`;
+  }).join('');
+  openList('Host Cities','16 cities across USA, Canada & Mexico',
+    `<div class="lsub"><span>All host cities (A–Z)</span><span>16 cities</span></div>${rows}`);
+}
+
+/* ---------- WEATHER (Open-Meteo, no API key) ---------- */
+const WX_CACHE={};
+const WX_CODE={0:["☀️","Clear"],1:["🌤️","Mainly clear"],2:["⛅","Partly cloudy"],3:["☁️","Overcast"],
+ 45:["🌫️","Fog"],48:["🌫️","Rime fog"],51:["🌦️","Light drizzle"],53:["🌦️","Drizzle"],55:["🌦️","Heavy drizzle"],
+ 61:["🌧️","Light rain"],63:["🌧️","Rain"],65:["🌧️","Heavy rain"],66:["🌧️","Freezing rain"],67:["🌧️","Freezing rain"],
+ 71:["🌨️","Light snow"],73:["🌨️","Snow"],75:["🌨️","Heavy snow"],77:["🌨️","Snow grains"],
+ 80:["🌦️","Showers"],81:["🌦️","Showers"],82:["⛈️","Violent showers"],85:["🌨️","Snow showers"],86:["🌨️","Snow showers"],
+ 95:["⛈️","Thunderstorm"],96:["⛈️","Thunderstorm w/ hail"],99:["⛈️","Thunderstorm w/ hail"]};
+function cToF(c){return Math.round(c*9/5+32);}
+async function loadWeather(venueName){
+  const g=VENUE_GEO[venueName];const slot=document.getElementById('wxSlot');
+  if(!g||!slot)return;
+  if(WX_CACHE[venueName]){slot.innerHTML=WX_CACHE[venueName];return;}
+  try{
+    const u=`https://api.open-meteo.com/v1/forecast?latitude=${g[0]}&longitude=${g[1]}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`;
+    const r=await fetch(u);if(!r.ok)throw 0;const j=await r.json();const cur=j.current;
+    const wc=WX_CODE[cur.weather_code]||["🌡️","—"];
+    const html=`<div class="wx"><div class="ic">${wc[0]}</div>
+      <div><div class="t">${Math.round(cur.temperature_2m)}°F</div><div class="d">${wc[1]} · feels ${Math.round(cur.apparent_temperature)}°F</div></div>
+      <div class="more">💧 ${cur.relative_humidity_2m}% humidity<br>🌬️ ${Math.round(cur.wind_speed_10m)} mph wind</div></div>`;
+    WX_CACHE[venueName]=html;slot.innerHTML=html;
+  }catch(e){slot.innerHTML='<div class="wx" style="background:var(--chip)"><div class="d">Weather unavailable right now.</div></div>';}
+}
+
 /* ---------- DELEGATED CLICKS ---------- */
 document.addEventListener('click',e=>{
-  const vl=e.target.closest('.vlink');
+  const vl=e.target.closest('.vlink,[data-venue]');
   if(vl){openVenue(vl.dataset.venue);return;}
   const pl=e.target.closest('.prow');
   if(pl&&ovBack.contains(pl)){openPlayer(+pl.dataset.player);return;}
-  const tl=e.target.closest('.tlink');
+  const tl=e.target.closest('.tlink,.lrow[data-team]');
   if(tl){openTeam(tl.dataset.team);return;}
+});
+/* ---------- KPI CARD CLICKS ---------- */
+const KPI_ACT={kpiTeamsCard:teamsOverlay,kpiMatchesCard:matchesOverlay,kpiCitiesCard:citiesOverlay,kpiPlayedCard:playedOverlay};
+Object.entries(KPI_ACT).forEach(([id,fn])=>{
+  const el=document.getElementById(id);if(!el)return;
+  el.addEventListener('click',fn);
+  el.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();fn();}});
 });
 document.getElementById('ovClose').onclick=closeOverlay;
 document.getElementById('ovBackBtn').onclick=()=>{if(currentTeam)openTeam(currentTeam);};
@@ -1003,8 +1164,10 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(venueBack.classL
 /* ---------- HEADER STATUS ---------- */
 function renderStatus(){
   const now=NOW();
-  const played=MATCHES.filter(m=>m.hs!=null&&m.as!=null).length;
+  const played=MATCHES.filter(m=>matchState(m)==='ft').length;
   document.getElementById('kpiPlayed').textContent=played;
+  const activeTeams=Object.keys(TEAM_GROUP).filter(t=>teamStatus(t).status!=='out').length;
+  document.getElementById('kpiTeams').textContent=activeTeams;
   const live=MATCHES.find(m=>matchState(m)==='live');
   const next=MATCHES.filter(m=>new Date(m.gmt)>now).sort((a,b)=>new Date(a.gmt)-new Date(b.gmt))[0];
   let s;
