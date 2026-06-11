@@ -766,7 +766,7 @@ function renderSchedule(){
       el.className='match'+(isToday(m)?' today':'');
       el.innerHTML=`
         <div class="m-home">${tspan(m.h,'r')}</div>
-        <div class="m-center">${center}<div class="m-venue"><span class="vlink" data-venue="${esc(m.v)}">${esc(m.v)}</span>, ${esc(m.c)}</div></div>
+        <div class="m-center">${center}<div class="m-venue"><span class="vlink" data-venue="${esc(m.v)}">${esc(m.v)}</span>, <span class="vlink" data-venue="${esc(m.v)}">${esc(m.c)}</span></div></div>
         <div class="m-away">${tspan(m.a,'l')}</div>
         <div style="grid-column:1/-1;text-align:center;margin-top:2px"><span class="badge b-grp">Group ${grp}</span></div>`;
       dg.appendChild(el);
@@ -946,7 +946,7 @@ function openTeam(team,keepScroll){
     let res;
     if(st==='ft'||st==='live'){const gf=home?m.hs:m.as,ga=home?m.as:m.hs;res=`<span class="res">${gf??0}–${ga??0}</span>`;}
     else res=`<span class="res" style="color:var(--muted);font-weight:600">${localTime(m.gmt)}</span>`;
-    html+=`<div class="fixrow"><span>${home?'vs':'@'}</span><span class="tlink" data-team="${esc(opp)}">${fl(opp)} ${esc(opp)}</span>${res}<span class="dt" style="width:100%;flex-basis:100%">${localDayLabel(m.gmt)} · <span class="vlink" data-venue="${esc(m.v)}">${esc(m.v)}</span>, ${esc(m.c)}</span></div>`;
+    html+=`<div class="fixrow"><span>${home?'vs':'@'}</span><span class="tlink" data-team="${esc(opp)}">${fl(opp)} ${esc(opp)}</span>${res}<span class="dt" style="width:100%;flex-basis:100%">${localDayLabel(m.gmt)} · <span class="vlink" data-venue="${esc(m.v)}">${esc(m.v)}</span>, <span class="vlink" data-venue="${esc(m.v)}">${esc(m.c)}</span></span></div>`;
   });
   html+=`<div class="sec-h">Squad</div>`;
   if(sq){
@@ -1298,7 +1298,7 @@ function renderLiveNow(){
       <span><span class="sc">${m.hs??0}–${m.as??0}</span><div class="mn">${esc(m.clock||"LIVE")}</div></span>
       <span class="nm tlink" data-team="${esc(m.a)}">${fl(m.a)} ${esc(m.a)}</span>
     </div>
-    <div class="mapcap" style="text-align:center;margin:0 0 8px">📍 <span class="vlink" data-venue="${esc(m.v)}">${esc(m.v)}</span>, ${esc(m.c)}</div>`;
+    <div class="mapcap" style="text-align:center;margin:0 0 8px">📍 <span class="vlink" data-venue="${esc(m.v)}">${esc(m.v)}</span>, <span class="vlink" data-venue="${esc(m.v)}">${esc(m.c)}</span></div>`;
     const feed=(m.feed||[]).slice().reverse().slice(0,8);
     if(feed.length){
       html+=`<div class="feed">`+feed.map(f=>`<div class="fevent"><span class="fc">${esc(f.clock||'')}</span><span class="fi">${evIcon(f.type,f.txt)}</span><span class="ft2">${esc(f.txt)}${f.team?` <span class="gchip">(${esc(f.team)})</span>`:''}</span></div>`).join('')+`</div>`;
