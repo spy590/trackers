@@ -882,11 +882,13 @@ function teamStats(team){
 /* ---------- OVERLAY ---------- */
 const ovBack=document.getElementById('ovBack');
 function openOverlay(){ovBack.classList.add('open');}
-function closeOverlay(){ovBack.classList.remove('open');document.getElementById('ovBackBtn').style.display='none';}
+function closeOverlay(){ovBack.classList.remove('open');document.getElementById('ovBackBtn').style.display='none';currentView=null;}
 let currentTeam=null;
+let currentView=null;   // 'team' | 'player' — which overlay is showing, for live refresh
 
-function openTeam(team){
-  currentTeam=team;
+function openTeam(team,keepScroll){
+  currentTeam=team; currentView='team';
+  const prevScroll=keepScroll?(document.getElementById('ovBody').scrollTop||0):0;
   document.getElementById('ovBackBtn').style.display='none';
   const {s,fixtures,form,group}=teamStats(team);
   const sq=SQUADS[team];
@@ -899,6 +901,12 @@ function openTeam(team){
     <div class="stat"><div class="v">${s.W}-${s.D}-${s.L}</div><div class="k">W-D-L</div></div>
     <div class="stat"><div class="v">${s.GF}:${s.GA}</div><div class="k">Goals</div></div>
   </div>`;
+  const liveM=fixtures.filter(m=>matchState(m)==='live');
+  if(liveM.length){
+    html+='<div class="live-note">'+liveM.map(m=>
+      `<div class="lr"><span class="ld"></span>${fl(m.h)} ${esc(m.h)} <span class="lsc">${m.hs??0}–${m.as??0}</span> ${esc(m.a)} ${fl(m.a)}${m.clock?` · ${esc(m.clock)}`:''}</div>`
+    ).join('')+'<div class="lcap">Live — not added to record until full time.</div></div>';
+  }
   const co=COORDS[team];
   if(co){
     html+=`<div class="sec-h">Home base — ${esc(co[2])}</div>${mapFrame(co[0],co[1],0.7,160)}`+
@@ -932,13 +940,14 @@ function openTeam(team){
     html+=`<div class="ph-note">Detailed roster not loaded for ${esc(team)} yet. The 12 tournament contenders have full squads — ask me to add ${esc(team)}'s roster and I'll load it.</div>`;
   }
   document.getElementById('ovBody').innerHTML=html;
-  document.getElementById('ovBody').scrollTop=0;
+  document.getElementById('ovBody').scrollTop=keepScroll?prevScroll:0;
   openOverlay();
 }
 
 function openPlayer(idx){
   const sq=SQUADS[currentTeam]; if(!sq)return;
   const pp=sq.players[idx]; if(!pp)return;
+  currentView='player';
   document.getElementById('ovBackBtn').style.display='block';
   document.getElementById('ovTitle').innerHTML=`<span class="fl">${fl(currentTeam)}</span>${esc(pp.name)}`;
   document.getElementById('ovSub').textContent=`${POS[pp.pos]} · ${currentTeam}${pp.n!=null?' · #'+pp.n:''}`;
@@ -1138,7 +1147,7 @@ function renderLiveNow(){
   html+=`</div>`;
   box.innerHTML=html;
 }
-function renderAll(){renderLiveNow();renderSchedule();renderGroups();renderStatus();renderScorers();if(document.getElementById('stats').classList.contains('active'))renderStatsCharts();}
+function renderAll(){renderLiveNow();renderSchedule();renderGroups();renderStatus();renderScorers();if(document.getElementById('stats').classList.contains('active'))renderStatsCharts();if(currentView==='team'&&currentTeam&&ovBack.classList.contains('open'))openTeam(currentTeam,true);}
 async function poll(days){
   try{
     const lists=await Promise.all(days.map(d=>fetchDay(d).catch(()=>null)));
