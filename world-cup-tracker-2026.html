@@ -106,6 +106,11 @@ table.stand tr.q2 td:first-child{box-shadow:inset 3px 0 0 var(--gold);}
 .live-dot.err{background:#ffd27a;}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(46,194,107,.6)}70%{box-shadow:0 0 0 7px rgba(46,194,107,0)}100%{box-shadow:0 0 0 0 rgba(46,194,107,0)}}
 .m-clock{font-size:10px;color:var(--live);font-weight:800;}
+.live-note{margin-top:8px;padding-top:7px;border-top:1px dashed var(--line);font-size:11px;color:var(--muted);}
+.live-note .lr{display:flex;align-items:center;gap:6px;padding:1px 0;}
+.live-note .ld{width:7px;height:7px;border-radius:50%;background:var(--live);animation:pulse 1.6s infinite;flex:0 0 auto;}
+.live-note .lsc{font-weight:800;color:var(--live);}
+.live-note .lcap{margin-top:3px;font-style:italic;opacity:.85;}
 .scorer{display:flex;align-items:center;gap:9px;padding:6px 4px;border-bottom:1px solid var(--line);font-size:13px;}
 .scorer .rk{width:20px;color:var(--muted);font-weight:800;text-align:center;}
 .scorer .gg{margin-left:auto;font-weight:800;color:var(--accent);}
@@ -775,6 +780,12 @@ function renderGroups(){
       html+=`<tr class="${cls}"><td class="team"><span class="tlink" data-team="${esc(r.t)}">${fl(r.t)} ${esc(r.t)}</span></td><td>${r.P}</td><td>${r.W}</td><td>${r.D}</td><td>${r.L}</td><td>${r.GF}</td><td>${r.GA}</td><td>${r.GD>0?'+':''}${r.GD}</td><td class="pts">${r.Pts}</td></tr>`;
     });
     html+='</tbody></table>';
+    const liveM=MATCHES.filter(m=>TEAM_GROUP[m.h]===g&&matchState(m)==='live');
+    if(liveM.length){
+      html+='<div class="live-note">'+liveM.map(m=>
+        `<div class="lr"><span class="ld"></span>${fl(m.h)} ${esc(m.h)} <span class="lsc">${m.hs??0}–${m.as??0}</span> ${esc(m.a)} ${fl(m.a)}${m.clock?` · ${esc(m.clock)}`:''}</div>`
+      ).join('')+'<div class="lcap">Live — not added to the table until full time.</div></div>';
+    }
     card.innerHTML=html; grid.appendChild(card);
   });
 }
@@ -1153,7 +1164,7 @@ renderBracket();
 renderVenues();
 renderStatus();
 renderScorers();
-setInterval(()=>{renderStatus();renderSchedule();},60000);  // local clock fallback when API is unavailable
+setInterval(()=>{renderStatus();renderSchedule();renderGroups();},60000);  // local clock fallback when API is unavailable
 startLive();
 </script>
 </body>
