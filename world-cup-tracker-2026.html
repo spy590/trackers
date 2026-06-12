@@ -135,6 +135,18 @@ table.stand tr.q2 td:first-child{box-shadow:inset 3px 0 0 var(--gold);}
 .pts{font-weight:800;}
 .legend{font-size:11px;color:var(--muted);margin-top:8px;display:flex;gap:14px;flex-wrap:wrap;}
 .dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:middle;}
+/* team crests (shown alongside flag emoji) */
+.crest{height:1.15em;width:auto;vertical-align:-3px;border-radius:2px;}
+.crest-lg{height:36px;vertical-align:middle;filter:drop-shadow(0 0 6px rgba(0,0,0,.5));}
+.crest-sm{height:15px;vertical-align:-3px;}
+/* match-detail overlay */
+.mtl{display:inline-flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:15px;}
+.mtl .crest{height:22px;}
+.mtl-sc b{font-size:19px;}
+.mtl-vs{color:rgba(255,255,255,.75);font-weight:700;}
+.report-link{display:inline-block;margin:2px 0 14px;padding:9px 14px;border-radius:10px;background:var(--accent);color:#fff;font-weight:700;font-size:12.5px;text-decoration:none;box-shadow:var(--glow-pink);}
+.report-link:hover{filter:brightness(1.12);}
+[data-match]{cursor:pointer;}
 /* teams */
 .teams-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
 .tcard{border:1px solid var(--line);border-radius:11px;padding:10px 12px;background:var(--card);}
@@ -393,6 +405,18 @@ table.stand tr.q2 td:first-child{box-shadow:inset 3px 0 0 var(--gold);}
   </div>
 </div>
 
+<!-- MATCH DETAIL OVERLAY -->
+<div class="ov-back ov-top" id="matchBack">
+  <div class="ov" style="max-width:600px">
+    <div class="ov-head">
+      <span class="x" id="matchClose">×</span>
+      <div class="ov-title" id="matchTitle"></div>
+      <div class="ov-sub" id="matchSub"></div>
+    </div>
+    <div class="ov-body" id="matchBody"></div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
 <script>
 /* ---------- DATA ---------- */
@@ -410,6 +434,33 @@ const FLAG={
  "Portugal":"🇵🇹","DR Congo":"🇨🇩","Uzbekistan":"🇺🇿","Colombia":"🇨🇴",
  "England":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Croatia":"🇭🇷","Ghana":"🇬🇭","Panama":"🇵🇦"
 };
+/* ESPN crest abbreviation + brand colors [primary, alternate] per team (static, from fifa.world/teams) */
+const TEAM_META={
+ "Mexico":["mex","#006847","#1a7a52"],"South Africa":["rsa","#087d5a","#fbb516"],"South Korea":["kor","#ce2028","#1e4384"],"Czechia":["cze","#d7141a","#11457e"],
+ "Canada":["can","#ed2224","#b51a1c"],"Bosnia":["bih","#112855","#f4c300"],"Qatar":["qat","#691a40","#8a1538"],"Switzerland":["sui","#d72b2c","#b51a1c"],
+ "Brazil":["bra","#fee000","#009c37"],"Morocco":["mar","#009060","#df2027"],"Haiti":["hai","#0033a0","#d20300"],"Scotland":["sco","#1a2d69","#2a3f8a"],
+ "USA":["usa","#213065","#d42339"],"Paraguay":["par","#ea2300","#0c2fff"],"Australia":["aus","#2a2d7c","#ed2f31"],"Turkiye":["tur","#ef3340","#c81e2c"],
+ "Germany":["ger","#1a1a1a","#db41a9"],"Curacao":["cuw","#0537e4","#1a1a1a"],"Ivory Coast":["civ","#d48c00","#5bbd19"],"Ecuador":["ecu","#ffdd00","#034ea2"],
+ "Netherlands":["ned","#fb5d00","#010080"],"Japan":["jpn","#ed1c24","#1a3a8a"],"Sweden":["swe","#fecb00","#006aa7"],"Tunisia":["tun","#d20300","#1a1a1a"],
+ "Belgium":["bel","#ef3340","#ffd100"],"Egypt":["egy","#d20300","#1a1a1a"],"Iran":["irn","#da0000","#239f40"],"New Zealand":["nzl","#273476","#3a4a96"],
+ "Spain":["esp","#c60b1e","#f1c40f"],"Cape Verde":["cpv","#1a3acc","#ef3340"],"Saudi Arabia":["ksa","#006233","#1a7a52"],"Uruguay":["uru","#003da5","#1a55c0"],
+ "France":["fra","#0c2fff","#1a44d0"],"Senegal":["sen","#00853f","#fdef42"],"Iraq":["irq","#00843d","#ce1126"],"Norway":["nor","#ef2b2d","#002868"],
+ "Argentina":["arg","#74acdf","#173e69"],"Algeria":["alg","#5bbd19","#1a7a2a"],"Austria":["aut","#d72b2c","#b51a1c"],"Jordan":["jor","#e70000","#1a1a1a"],
+ "Portugal":["por","#da291c","#006600"],"DR Congo":["cod","#418fde","#c60000"],"Uzbekistan":["uzb","#0081d6","#1eb53a"],"Colombia":["col","#fbd632","#21418c"],
+ "England":["eng","#ce1124","#1a2d69"],"Croatia":["cro","#ff0000","#0c2fff"],"Ghana":["gha","#ce2931","#006b3f"],"Panama":["pan","#d21034","#005293"]
+};
+const crest=(t,cls)=>{const m=TEAM_META[t];return m?`<img class="crest${cls?' '+cls:''}" src="https://a.espncdn.com/i/teamlogos/countries/500/${m[0]}.png" alt="" loading="lazy" onerror="this.remove()">`:'';};
+/* Pick a brand color that stays legible behind white header text; darken very light colors */
+function teamTint(t){
+  const m=TEAM_META[t];if(!m)return'';
+  let h=m[1].replace('#','');let r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);
+  const lum=(0.299*r+0.587*g+0.114*b)/255;
+  if(lum>0.6){const m2=m[2].replace('#','');const l2=(0.299*parseInt(m2.slice(0,2),16)+0.587*parseInt(m2.slice(2,4),16)+0.114*parseInt(m2.slice(4,6),16))/255;
+    if(l2<0.6){r=parseInt(m2.slice(0,2),16);g=parseInt(m2.slice(2,4),16);b=parseInt(m2.slice(4,6),16);}
+    else{r=Math.round(r*0.55);g=Math.round(g*0.55);b=Math.round(b*0.55);}}
+  const dk=(x)=>Math.round(x*0.45);
+  return `linear-gradient(135deg,rgb(${r},${g},${b}),rgb(${dk(r)},${dk(g)},${dk(b)}))`;
+}
 const GROUPS={
  A:["Mexico","South Africa","South Korea","Czechia"],
  B:["Canada","Bosnia","Qatar","Switzerland"],
@@ -796,6 +847,7 @@ function renderSchedule(){
       else center=`<div class="m-vs">v</div><div class="m-time">${localTime(m.gmt)}</div>`;
       const el=document.createElement('div');
       el.className='match'+(isToday(m)?' today':'');
+      el.dataset.match=MATCHES.indexOf(m);
       el.innerHTML=`
         <div class="m-home">${tspan(m.h,'r')}</div>
         <div class="m-center">${center}<div class="m-venue"><span class="vlink" data-venue="${esc(m.v)}">${esc(m.v)}</span>, <span class="vlink" data-venue="${esc(m.v)}">${esc(m.c)}</span></div></div>
@@ -834,7 +886,7 @@ function renderGroups(){
       <table class="stand"><thead><tr><th class="team">Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th></tr></thead><tbody>`;
     rows.forEach((r,i)=>{
       const cls=i===0?'q1':(i===1?'q2':'');
-      html+=`<tr class="${cls}"><td class="team"><span class="tlink" data-team="${esc(r.t)}">${fl(r.t)} ${esc(r.t)}</span></td><td>${r.P}</td><td>${r.W}</td><td>${r.D}</td><td>${r.L}</td><td>${r.GF}</td><td>${r.GA}</td><td>${r.GD>0?'+':''}${r.GD}</td><td class="pts">${r.Pts}</td></tr>`;
+      html+=`<tr class="${cls}"><td class="team"><span class="tlink" data-team="${esc(r.t)}">${crest(r.t,'crest-sm')} ${fl(r.t)} ${esc(r.t)}</span></td><td>${r.P}</td><td>${r.W}</td><td>${r.D}</td><td>${r.L}</td><td>${r.GF}</td><td>${r.GA}</td><td>${r.GD>0?'+':''}${r.GD}</td><td class="pts">${r.Pts}</td></tr>`;
     });
     html+='</tbody></table>';
     const liveM=MATCHES.filter(m=>TEAM_GROUP[m.h]===g&&matchState(m)==='live');
@@ -853,7 +905,7 @@ function renderTeams(){
   Object.entries(GROUPS).forEach(([g,ts])=>{
     const c=document.createElement('div'); c.className='tcard';
     c.innerHTML=`<div class="gh">Group ${g}</div>`+ts.map(t=>
-      `<div class="row tlink" data-team="${esc(t)}"><span class="fl">${fl(t)}</span>${esc(t)}${SQUADS[t]?'<span class="star">★ roster</span>':''}</div>`).join('');
+      `<div class="row tlink" data-team="${esc(t)}">${crest(t,'crest-sm')}<span class="fl">${fl(t)}</span>${esc(t)}${SQUADS[t]?'<span class="star">★ roster</span>':''}</div>`).join('');
     grid.appendChild(c);
   });
 }
@@ -952,8 +1004,9 @@ function openTeam(team,keepScroll){
   document.getElementById('ovBackBtn').style.display='none';
   const {s,fixtures,form,group}=teamStats(team);
   const sq=SQUADS[team];
-  document.getElementById('ovTitle').innerHTML=`<span class="fl">${fl(team)}</span>${esc(team)}`;
+  document.getElementById('ovTitle').innerHTML=`${crest(team,'crest-lg')}<span class="fl">${fl(team)}</span>${esc(team)}`;
   document.getElementById('ovSub').textContent=`Group ${group}${sq?' · '+sq.coach:''}`;
+  const ovHead=document.querySelector('#ovBack .ov-head');if(ovHead){const t=teamTint(team);ovHead.style.background=t||'';}
   const ord=['st','nd','rd','th'][Math.min(s.pos-1,3)]||'th';
   let html=`<div class="statgrid">
     <div class="stat"><div class="v">${s.pos?s.pos+ord:'–'}</div><div class="k">In Group ${group}</div></div>
@@ -1032,6 +1085,7 @@ function openPlayer(idx){
 
 /* ---------- VENUE MAP OVERLAY ---------- */
 const venueBack=document.getElementById('venueBack');
+const matchBack=document.getElementById('matchBack');
 function openVenue(name){
   const g=VENUE_GEO[name];const meta=VENUES.find(v=>v[0]===name);
   document.getElementById('venueTitle').textContent=name;
@@ -1116,7 +1170,7 @@ function matchRow(m,clickTeams){
   else if(st==='live') right=`<span class="meta lsc" style="color:var(--live);font-weight:800">${m.hs??0}–${m.as??0}</span><span class="spill live">● Live</span>`;
   else right=`<span class="meta">${localTime(m.gmt)}</span>`;
   const nm=t=>clickTeams?`<span class="nm tlink" data-team="${esc(t)}">${esc(t)}</span>`:`<span class="nm">${esc(t)}</span>`;
-  return `<div class="lrow"><span class="fl">${fl(m.h)}</span>${nm(m.h)}
+  return `<div class="lrow" data-match="${MATCHES.indexOf(m)}"><span class="fl">${fl(m.h)}</span>${nm(m.h)}
     <span style="color:var(--muted);font-size:11px">v</span>
     ${nm(m.a)}<span class="fl">${fl(m.a)}</span>${right}</div>`;
 }
@@ -1182,11 +1236,13 @@ async function loadWeather(venueName){
 /* ---------- DELEGATED CLICKS ---------- */
 document.addEventListener('click',e=>{
   const vl=e.target.closest('.vlink,[data-venue]');
-  if(vl){openVenue(vl.dataset.venue);return;}
+  if(vl){if(matchBack.contains(vl))closeMatch();openVenue(vl.dataset.venue);return;}
   const pl=e.target.closest('.prow');
   if(pl&&ovBack.contains(pl)){openPlayer(+pl.dataset.player);return;}
   const tl=e.target.closest('.tlink,.lrow[data-team]');
-  if(tl){if(venueBack.contains(tl))closeVenue();openTeam(tl.dataset.team);return;}
+  if(tl){if(venueBack.contains(tl))closeVenue();if(matchBack.contains(tl))closeMatch();openTeam(tl.dataset.team);return;}
+  const ml=e.target.closest('[data-match]');
+  if(ml){closeVenue();openMatch(+ml.dataset.match);return;}
 });
 /* ---------- KPI CARD CLICKS ---------- */
 const KPI_ACT={kpiTeamsCard:teamsOverlay,kpiMatchesCard:matchesOverlay,kpiCitiesCard:citiesOverlay,kpiPlayedCard:playedOverlay};
@@ -1200,7 +1256,9 @@ document.getElementById('ovBackBtn').onclick=()=>{if(currentTeam)openTeam(curren
 ovBack.addEventListener('click',e=>{if(e.target===ovBack)closeOverlay();});
 document.getElementById('venueClose').onclick=closeVenue;
 venueBack.addEventListener('click',e=>{if(e.target===venueBack)closeVenue();});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(venueBack.classList.contains('open'))closeVenue();else closeOverlay();}});
+document.getElementById('matchClose').onclick=closeMatch;
+matchBack.addEventListener('click',e=>{if(e.target===matchBack)closeMatch();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(matchBack.classList.contains('open'))closeMatch();else if(venueBack.classList.contains('open'))closeVenue();else closeOverlay();}});
 
 /* ---------- HEADER STATUS ---------- */
 function renderStatus(){
@@ -1328,13 +1386,57 @@ async function refreshLiveFeeds(){
     try{const j=await fetchSummary(m.eventId);m.feed=extractFeed(j);}catch(e){/* keep prior feed */}
   }));
 }
+/* ---- match detail overlay ---- */
+let currentMatchIdx=null;
+function matchStatusLabel(m,st){
+  if(st==='ft')return'Full time';
+  if(st==='live')return'● Live'+(m.clock?' '+esc(m.clock):'');
+  if(st==='await')return'Awaiting result';
+  return localTime(m.gmt);
+}
+function feedRows(feed){
+  return `<div class="feed" style="max-height:none">`+feed.map(f=>`<div class="fevent"><span class="fc">${esc(f.clock||'')}</span><span class="fi">${evIcon(f.type,f.txt)}</span><span class="ft2">${esc(f.txt)}${f.team?` <span class="gchip">(${esc(f.team)})</span>`:''}</span></div>`).join('')+`</div>`;
+}
+function renderMatchBody(m,st){
+  const body=document.getElementById('matchBody');if(!body)return;
+  const report=(st==='ft'&&m.eventId)?`<a class="report-link" href="https://www.espn.com/soccer/report/_/gameId/${m.eventId}" target="_blank" rel="noopener noreferrer">📰 Match report on ESPN ↗</a>`:'';
+  const feed=(m.feed||[]).slice().reverse();
+  let feedHtml;
+  if(feed.length) feedHtml=`<div class="lsub">Play-by-play<span>${feed.length}</span></div>`+feedRows(feed);
+  else if(m.eventId) feedHtml=`<div class="feed-empty" id="mFeedLoad">Loading play-by-play from ESPN…</div>`;
+  else feedHtml=`<div class="ph-note">Play-by-play isn't available for this match yet.</div>`;
+  body.innerHTML=report+feedHtml;
+}
+function paintMatch(m,st){
+  const sc=(st==='upcoming'||st==='await')?'<span class="mtl-vs">v</span>':`<b>${m.hs??0}–${m.as??0}</b>`;
+  document.getElementById('matchTitle').innerHTML=
+    `<span class="mtl">${crest(m.h)}${fl(m.h)} <span class="tlink" data-team="${esc(m.h)}">${esc(m.h)}</span> `
+    +`<span class="mtl-sc">${sc}</span> `
+    +`<span class="tlink" data-team="${esc(m.a)}">${esc(m.a)}</span> ${fl(m.a)}${crest(m.a)}</span>`;
+  document.getElementById('matchSub').innerHTML=
+    `${esc(localDayLabel(m.gmt))} · ${matchStatusLabel(m,st)} · <span class="vlink" data-venue="${esc(m.v)}">${esc(m.v)}</span>, ${esc(m.c)}`;
+  renderMatchBody(m,st);
+}
+async function openMatch(idx){
+  const m=MATCHES[idx];if(!m)return;
+  currentMatchIdx=idx;
+  const head=document.querySelector('#matchBack .ov-head');if(head)head.style.background='';
+  paintMatch(m,matchState(m));
+  matchBack.classList.add('open');
+  if(m.eventId){
+    try{const j=await fetchSummary(m.eventId);m.feed=extractFeed(j);
+      if(currentMatchIdx===idx&&matchBack.classList.contains('open'))paintMatch(m,matchState(m));
+    }catch(e){const ld=document.getElementById('mFeedLoad');if(ld&&currentMatchIdx===idx)ld.textContent='Play-by-play unavailable right now.';}
+  }
+}
+function closeMatch(){matchBack.classList.remove('open');currentMatchIdx=null;}
 function renderLiveNow(){
   const box=document.getElementById('liveNow');if(!box)return;
   const live=MATCHES.filter(m=>matchState(m)==='live');
   if(!live.length){box.innerHTML='';return;}
   let html=`<div class="livecard"><div class="lh"><span class="live-dot on"></span>Live now · ${live.length} match${live.length>1?'es':''}</div>`;
   live.forEach(m=>{
-    html+=`<div class="lmatch"><div class="lscore">
+    html+=`<div class="lmatch" data-match="${MATCHES.indexOf(m)}"><div class="lscore">
       <span class="nm h tlink" data-team="${esc(m.h)}">${esc(m.h)} ${fl(m.h)}</span>
       <span><span class="sc">${m.hs??0}–${m.as??0}</span><div class="mn">${esc(m.clock||"LIVE")}</div></span>
       <span class="nm tlink" data-team="${esc(m.a)}">${fl(m.a)} ${esc(m.a)}</span>
@@ -1351,7 +1453,7 @@ function renderLiveNow(){
   html+=`</div>`;
   box.innerHTML=html;
 }
-function renderAll(){renderLiveNow();renderSchedule();renderGroups();renderStatus();renderScorers();if(document.getElementById('stats').classList.contains('active'))renderStatsCharts();if(currentView==='team'&&currentTeam&&ovBack.classList.contains('open'))openTeam(currentTeam,true);}
+function renderAll(){renderLiveNow();renderSchedule();renderGroups();renderStatus();renderScorers();if(document.getElementById('stats').classList.contains('active'))renderStatsCharts();if(currentView==='team'&&currentTeam&&ovBack.classList.contains('open'))openTeam(currentTeam,true);if(currentMatchIdx!=null&&matchBack.classList.contains('open')){const m=MATCHES[currentMatchIdx];if(m&&matchState(m)==='live')paintMatch(m,'live');}}
 async function poll(days){
   try{
     const lists=await Promise.all(days.map(d=>fetchDay(d).catch(()=>null)));
