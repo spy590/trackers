@@ -814,7 +814,7 @@ function matchState(m){
   return "upcoming";
 }
 function tspan(t,align){
-  const inner = align==='r' ? esc(t)+' <span class="fl">'+fl(t)+'</span>' : '<span class="fl">'+fl(t)+'</span> '+esc(t);
+  const inner = align==='r' ? esc(t)+' '+crest(t) : crest(t)+' '+esc(t);
   return `<span class="m-team tlink" data-team="${esc(t)}">${inner}</span>`;
 }
 
@@ -886,13 +886,13 @@ function renderGroups(){
       <table class="stand"><thead><tr><th class="team">Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th></tr></thead><tbody>`;
     rows.forEach((r,i)=>{
       const cls=i===0?'q1':(i===1?'q2':'');
-      html+=`<tr class="${cls}"><td class="team"><span class="tlink" data-team="${esc(r.t)}">${crest(r.t,'crest-sm')} ${fl(r.t)} ${esc(r.t)}</span></td><td>${r.P}</td><td>${r.W}</td><td>${r.D}</td><td>${r.L}</td><td>${r.GF}</td><td>${r.GA}</td><td>${r.GD>0?'+':''}${r.GD}</td><td class="pts">${r.Pts}</td></tr>`;
+      html+=`<tr class="${cls}"><td class="team"><span class="tlink" data-team="${esc(r.t)}">${crest(r.t,'crest-sm')} ${esc(r.t)}</span></td><td>${r.P}</td><td>${r.W}</td><td>${r.D}</td><td>${r.L}</td><td>${r.GF}</td><td>${r.GA}</td><td>${r.GD>0?'+':''}${r.GD}</td><td class="pts">${r.Pts}</td></tr>`;
     });
     html+='</tbody></table>';
     const liveM=MATCHES.filter(m=>TEAM_GROUP[m.h]===g&&matchState(m)==='live');
     if(liveM.length){
       html+='<div class="live-note">'+liveM.map(m=>
-        `<div class="lr"><span class="ld"></span>${fl(m.h)} ${esc(m.h)} <span class="lsc">${m.hs??0}–${m.as??0}</span> ${esc(m.a)} ${fl(m.a)}${m.clock?` · ${esc(m.clock)}`:''}</div>`
+        `<div class="lr"><span class="ld"></span>${crest(m.h)} ${esc(m.h)} <span class="lsc">${m.hs??0}–${m.as??0}</span> ${esc(m.a)} ${crest(m.a)}${m.clock?` · ${esc(m.clock)}`:''}</div>`
       ).join('')+'<div class="lcap">Live — not added to the table until full time.</div></div>';
     }
     card.innerHTML=html; grid.appendChild(card);
@@ -905,7 +905,7 @@ function renderTeams(){
   Object.entries(GROUPS).forEach(([g,ts])=>{
     const c=document.createElement('div'); c.className='tcard';
     c.innerHTML=`<div class="gh">Group ${g}</div>`+ts.map(t=>
-      `<div class="row tlink" data-team="${esc(t)}">${crest(t,'crest-sm')}<span class="fl">${fl(t)}</span>${esc(t)}${SQUADS[t]?'<span class="star">★ roster</span>':''}</div>`).join('');
+      `<div class="row tlink" data-team="${esc(t)}">${crest(t,'crest-sm')}${esc(t)}${SQUADS[t]?'<span class="star">★ roster</span>':''}</div>`).join('');
     grid.appendChild(c);
   });
 }
@@ -1004,7 +1004,7 @@ function openTeam(team,keepScroll){
   document.getElementById('ovBackBtn').style.display='none';
   const {s,fixtures,form,group}=teamStats(team);
   const sq=SQUADS[team];
-  document.getElementById('ovTitle').innerHTML=`${crest(team,'crest-lg')}<span class="fl">${fl(team)}</span>${esc(team)}`;
+  document.getElementById('ovTitle').innerHTML=`${crest(team,'crest-lg')}${esc(team)}`;
   document.getElementById('ovSub').textContent=`Group ${group}${sq?' · '+sq.coach:''}`;
   const ovHead=document.querySelector('#ovBack .ov-head');if(ovHead){const t=teamTint(team);ovHead.style.background=t||'';}
   const ord=['st','nd','rd','th'][Math.min(s.pos-1,3)]||'th';
@@ -1017,7 +1017,7 @@ function openTeam(team,keepScroll){
   const liveM=fixtures.filter(m=>matchState(m)==='live');
   if(liveM.length){
     html+='<div class="live-note">'+liveM.map(m=>
-      `<div class="lr"><span class="ld"></span>${fl(m.h)} ${esc(m.h)} <span class="lsc">${m.hs??0}–${m.as??0}</span> ${esc(m.a)} ${fl(m.a)}${m.clock?` · ${esc(m.clock)}`:''}</div>`
+      `<div class="lr"><span class="ld"></span>${crest(m.h)} ${esc(m.h)} <span class="lsc">${m.hs??0}–${m.as??0}</span> ${esc(m.a)} ${crest(m.a)}${m.clock?` · ${esc(m.clock)}`:''}</div>`
     ).join('')+'<div class="lcap">Live — not added to record until full time.</div></div>';
   }
   const co=COORDS[team];
@@ -1034,7 +1034,7 @@ function openTeam(team,keepScroll){
     let res;
     if(st==='ft'||st==='live'){const gf=home?m.hs:m.as,ga=home?m.as:m.hs;res=`<span class="res">${gf??0}–${ga??0}</span>`;}
     else res=`<span class="res" style="color:var(--muted);font-weight:600">${localTime(m.gmt)}</span>`;
-    html+=`<div class="fixrow"><span>${home?'vs':'@'}</span><span class="tlink" data-team="${esc(opp)}">${fl(opp)} ${esc(opp)}</span>${res}<span class="dt" style="width:100%;flex-basis:100%">${localDayLabel(m.gmt)} · <span class="vlink" data-venue="${esc(m.v)}">${esc(m.v)}</span>, <span class="vlink" data-venue="${esc(m.v)}">${esc(m.c)}</span></span></div>`;
+    html+=`<div class="fixrow"><span>${home?'vs':'@'}</span><span class="tlink" data-team="${esc(opp)}">${crest(opp)} ${esc(opp)}</span>${res}<span class="dt" style="width:100%;flex-basis:100%">${localDayLabel(m.gmt)} · <span class="vlink" data-venue="${esc(m.v)}">${esc(m.v)}</span>, <span class="vlink" data-venue="${esc(m.v)}">${esc(m.c)}</span></span></div>`;
   });
   html+=`<div class="sec-h">Squad</div>`;
   if(sq){
@@ -1062,7 +1062,7 @@ function openPlayer(idx){
   const pp=sq.players[idx]; if(!pp)return;
   currentView='player';
   document.getElementById('ovBackBtn').style.display='block';
-  document.getElementById('ovTitle').innerHTML=`<span class="fl">${fl(currentTeam)}</span>${esc(pp.name)}`;
+  document.getElementById('ovTitle').innerHTML=`${crest(currentTeam,'crest-lg')}${esc(pp.name)}`;
   document.getElementById('ovSub').textContent=`${POS[pp.pos]} · ${currentTeam}${pp.n!=null?' · #'+pp.n:''}`;
   let chips=`<div class="chips">
     <span class="chip">Position <b>${pp.pos}</b></span>
@@ -1155,7 +1155,7 @@ function teamsOverlay(){
     const pill=e.status==='through'?'<span class="spill through">Through</span>'
       :e.status==='out'?'<span class="spill out">Out</span>':'';
     return `<div class="lrow tap ${e.status==='out'?'out':''}" data-team="${esc(e.t)}">
-      <span class="fl">${fl(e.t)}</span><span class="nm">${esc(e.t)}</span>${pill}
+      ${crest(e.t)}<span class="nm">${esc(e.t)}</span>${pill}
       <span class="meta">${esc(e.note)}</span></div>`;
   }).join('');
   openList('Teams','48 teams · '+active+' still in'+(out?(' · '+out+' eliminated'):''),
@@ -1170,9 +1170,9 @@ function matchRow(m,clickTeams){
   else if(st==='live') right=`<span class="meta lsc" style="color:var(--live);font-weight:800">${m.hs??0}–${m.as??0}</span><span class="spill live">● Live</span>`;
   else right=`<span class="meta">${localTime(m.gmt)}</span>`;
   const nm=t=>clickTeams?`<span class="nm tlink" data-team="${esc(t)}">${esc(t)}</span>`:`<span class="nm">${esc(t)}</span>`;
-  return `<div class="lrow" data-match="${MATCHES.indexOf(m)}"><span class="fl">${fl(m.h)}</span>${nm(m.h)}
+  return `<div class="lrow" data-match="${MATCHES.indexOf(m)}">${crest(m.h)}${nm(m.h)}
     <span style="color:var(--muted);font-size:11px">v</span>
-    ${nm(m.a)}<span class="fl">${fl(m.a)}</span>${right}</div>`;
+    ${nm(m.a)}${crest(m.a)}${right}</div>`;
 }
 function groupByLocalDay(list){
   const days={},labels={},order=[];
@@ -1275,7 +1275,7 @@ function renderStatus(){
   else if(now>new Date('2026-07-19T21:00Z')) s='Tournament complete';
   else s='Group stage underway';
   document.getElementById('statusLine').textContent=s;
-  document.getElementById('nextLine').textContent=next?('Next: '+fl(next.h)+' '+next.h+' v '+next.a+' '+fl(next.a)+' · '+localDayLabel(next.gmt)+', '+localTime(next.gmt)):'';
+  document.getElementById('nextLine').textContent=next?('Next: '+next.h+' v '+next.a+' · '+localDayLabel(next.gmt)+', '+localTime(next.gmt)):'';
 }
 
 /* ---------- FILTERS / TABS ---------- */
@@ -1341,7 +1341,7 @@ function renderScorers(){
   const el=document.getElementById('scorers');if(!el)return;
   const arr=Object.values(ESPN_SCORERS).filter(s=>s.goals>0).sort((a,b)=>b.goals-a.goals||a.name.localeCompare(b.name)).slice(0,15);
   if(!arr.length){el.className='hint';el.textContent='No goals recorded yet — the race begins with the opening matches.';return;}
-  el.className='';el.innerHTML=arr.map((s,i)=>`<div class="scorer"><span class="rk">${i+1}</span><span>${esc(s.name)} <span class="tm tlink" data-team="${esc(s.team)}">${fl(s.team)} ${esc(s.team)}</span></span><span class="gg">${s.goals}</span></div>`).join('');
+  el.className='';el.innerHTML=arr.map((s,i)=>`<div class="scorer"><span class="rk">${i+1}</span><span>${esc(s.name)} <span class="tm tlink" data-team="${esc(s.team)}">${crest(s.team)} ${esc(s.team)}</span></span><span class="gg">${s.goals}</span></div>`).join('');
 }
 function updateLiveUI(stx){
   const dot=document.getElementById('liveDot'),txt=document.getElementById('liveText');if(!dot)return;
@@ -1410,9 +1410,9 @@ function renderMatchBody(m,st){
 function paintMatch(m,st){
   const sc=(st==='upcoming'||st==='await')?'<span class="mtl-vs">v</span>':`<b>${m.hs??0}–${m.as??0}</b>`;
   document.getElementById('matchTitle').innerHTML=
-    `<span class="mtl">${crest(m.h)}${fl(m.h)} <span class="tlink" data-team="${esc(m.h)}">${esc(m.h)}</span> `
+    `<span class="mtl">${crest(m.h)} <span class="tlink" data-team="${esc(m.h)}">${esc(m.h)}</span> `
     +`<span class="mtl-sc">${sc}</span> `
-    +`<span class="tlink" data-team="${esc(m.a)}">${esc(m.a)}</span> ${fl(m.a)}${crest(m.a)}</span>`;
+    +`<span class="tlink" data-team="${esc(m.a)}">${esc(m.a)}</span> ${crest(m.a)}</span>`;
   document.getElementById('matchSub').innerHTML=
     `${esc(localDayLabel(m.gmt))} · ${matchStatusLabel(m,st)} · <span class="vlink" data-venue="${esc(m.v)}">${esc(m.v)}</span>, ${esc(m.c)}`;
   renderMatchBody(m,st);
@@ -1437,9 +1437,9 @@ function renderLiveNow(){
   let html=`<div class="livecard"><div class="lh"><span class="live-dot on"></span>Live now · ${live.length} match${live.length>1?'es':''}</div>`;
   live.forEach(m=>{
     html+=`<div class="lmatch" data-match="${MATCHES.indexOf(m)}"><div class="lscore">
-      <span class="nm h tlink" data-team="${esc(m.h)}">${esc(m.h)} ${fl(m.h)}</span>
+      <span class="nm h tlink" data-team="${esc(m.h)}">${esc(m.h)} ${crest(m.h)}</span>
       <span><span class="sc">${m.hs??0}–${m.as??0}</span><div class="mn">${esc(m.clock||"LIVE")}</div></span>
-      <span class="nm tlink" data-team="${esc(m.a)}">${fl(m.a)} ${esc(m.a)}</span>
+      <span class="nm tlink" data-team="${esc(m.a)}">${crest(m.a)} ${esc(m.a)}</span>
     </div>
     <div class="mapcap" style="text-align:center;margin:0 0 8px">📍 <span class="vlink" data-venue="${esc(m.v)}">${esc(m.v)}</span>, <span class="vlink" data-venue="${esc(m.v)}">${esc(m.c)}</span></div>`;
     const feed=(m.feed||[]).slice().reverse().slice(0,8);
