@@ -1038,8 +1038,13 @@ function openVenue(name){
   document.getElementById('venueSub').textContent=meta?(meta[1]+', '+meta[2]):'';
   const body=document.getElementById('venueBody');
   if(g){
+    const vm=MATCHES.filter(m=>m.v===name&&(matchState(m)==='upcoming'||matchState(m)==='live'))
+      .sort((a,b)=>new Date(a.gmt)-new Date(b.gmt));
+    const matchesHtml=`<div class="lsub" style="margin-top:14px">Upcoming matches at this venue<span>${vm.length}</span></div>`
+      +(vm.length?vm.map(m=>matchRow(m,true)).join(''):'<div class="ph-note">No upcoming matches scheduled here.</div>');
     body.innerHTML=mapFrame(g[0],g[1],0.02,320)+`<div class="mapcap">📍 ${esc(name)}${meta?' · '+esc(meta[1])+', '+esc(meta[2]):''} · <a href="${osmLink(g[0],g[1],15)}" target="_blank" rel="noopener noreferrer">larger map</a></div>`
-      +`<div id="wxSlot"><div class="wx" style="background:var(--chip)"><div class="d">Loading current weather…</div></div></div>`;
+      +`<div id="wxSlot"><div class="wx" style="background:var(--chip)"><div class="d">Loading current weather…</div></div></div>`
+      +matchesHtml;
     loadWeather(name);
   } else body.innerHTML='<div class="ph-note">Location unavailable for this venue.</div>';
   venueBack.classList.add('open');
@@ -1104,15 +1109,16 @@ function teamsOverlay(){
 }
 
 /* ---------- MATCH ROW (shared by Matches + Played lists) ---------- */
-function matchRow(m){
+function matchRow(m,clickTeams){
   const st=matchState(m);
   let right;
   if(st==='ft') right=`<span class="meta">${m.hs}–${m.as}</span><span class="spill ft">FT</span>`;
   else if(st==='live') right=`<span class="meta lsc" style="color:var(--live);font-weight:800">${m.hs??0}–${m.as??0}</span><span class="spill live">● Live</span>`;
   else right=`<span class="meta">${localTime(m.gmt)}</span>`;
-  return `<div class="lrow"><span class="fl">${fl(m.h)}</span><span class="nm">${esc(m.h)}</span>
+  const nm=t=>clickTeams?`<span class="nm tlink" data-team="${esc(t)}">${esc(t)}</span>`:`<span class="nm">${esc(t)}</span>`;
+  return `<div class="lrow"><span class="fl">${fl(m.h)}</span>${nm(m.h)}
     <span style="color:var(--muted);font-size:11px">v</span>
-    <span class="nm">${esc(m.a)}</span><span class="fl">${fl(m.a)}</span>${right}</div>`;
+    ${nm(m.a)}<span class="fl">${fl(m.a)}</span>${right}</div>`;
 }
 function groupByLocalDay(list){
   const days={},labels={},order=[];
@@ -1180,7 +1186,7 @@ document.addEventListener('click',e=>{
   const pl=e.target.closest('.prow');
   if(pl&&ovBack.contains(pl)){openPlayer(+pl.dataset.player);return;}
   const tl=e.target.closest('.tlink,.lrow[data-team]');
-  if(tl){openTeam(tl.dataset.team);return;}
+  if(tl){if(venueBack.contains(tl))closeVenue();openTeam(tl.dataset.team);return;}
 });
 /* ---------- KPI CARD CLICKS ---------- */
 const KPI_ACT={kpiTeamsCard:teamsOverlay,kpiMatchesCard:matchesOverlay,kpiCitiesCard:citiesOverlay,kpiPlayedCard:playedOverlay};
