@@ -355,6 +355,13 @@ table.stand tr.q2 td:first-child{box-shadow:inset 3px 0 0 var(--gold);}
       <h3>Top scorers — Golden Boot race</h3>
       <div id="scorers" class="hint">No goals recorded yet — the race begins with the opening matches. As results are entered, scorers rank here.</div>
     </div>
+    <div id="statsSweepNote" class="hint" style="margin:-6px 2px 10px"></div>
+    <div class="chart-grid">
+      <div class="card"><h3>Top assists</h3><div id="assistLeaders" class="hint">Aggregating from finished matches…</div></div>
+      <div class="card"><h3>Most saves — goalkeepers</h3><div id="saveLeaders" class="hint">Aggregating from finished matches…</div></div>
+      <div class="card"><h3>Penalty-kick goals</h3><div id="penLeaders" class="hint">No penalty goals yet.</div></div>
+      <div class="card"><h3>Discipline — cards</h3><div id="cardLeaders" class="hint">Aggregating from finished matches…</div></div>
+    </div>
     <div class="chart-grid">
       <div class="card">
         <h3>Matches by host nation</h3>
@@ -1072,11 +1079,12 @@ function openPlayer(idx){
     ${pp.caps!=null?`<span class="chip">Caps <b>${pp.caps}</b></span>`:''}
   </div>`;
   let html=chips+`<div class="sec-h">World Cup 2026</div>
-    <div class="statgrid">
-      <div class="stat"><div class="v">${pp.apps||0}</div><div class="k">Apps</div></div>
+    <div class="statgrid"${pp.pos==='GK'?' style="grid-template-columns:repeat(5,1fr)"':''}>
       <div class="stat"><div class="v">${pp.g||0}</div><div class="k">Goals</div></div>
       <div class="stat"><div class="v">${pp.a||0}</div><div class="k">Assists</div></div>
-      <div class="stat"><div class="v">${(pp.yc||0)}/${(pp.rc||0)}</div><div class="k">Yel/Red</div></div>
+      ${pp.pos==='GK'?`<div class="stat"><div class="v">${pp.saves||0}</div><div class="k">Saves</div></div>`:''}
+      <div class="stat"><div class="v">${pp.yc||0}</div><div class="k">Yellow</div></div>
+      <div class="stat"><div class="v">${pp.rc||0}</div><div class="k">Red</div></div>
     </div>
     <div class="ph-note">Per-match stats (goals, assists, appearances) accrue as the tournament is played. ${pp.caps!=null?'Career caps shown above reflect pre-tournament internationals.':'Club and squad number are from the official squad list.'}</div>`;
   document.getElementById('ovBody').innerHTML=html;
@@ -1293,7 +1301,7 @@ document.getElementById('tabs').addEventListener('click',e=>{
   document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
   tab.classList.add('active');
   document.getElementById(tab.dataset.p).classList.add('active');
-  if(tab.dataset.p==='stats') renderStatsCharts();
+  if(tab.dataset.p==='stats'){renderStatsCharts();renderLeaders();sweepStats();}
 });
 
 /* ---------- LIVE DATA (ESPN public scoreboard) ---------- */
@@ -1302,7 +1310,10 @@ const CANON_NORM={};Object.keys(TEAM_GROUP).forEach(t=>CANON_NORM[normalize(t)]=
 const ALIAS={unitedstates:"USA",usmnt:"USA",turkey:"Turkiye",turkiye:"Turkiye",cotedivoire:"Ivory Coast",ivorycoast:"Ivory Coast",congodr:"DR Congo",drcongo:"DR Congo",democraticrepublicofthecongo:"DR Congo",democraticrepublicofcongo:"DR Congo",caboverde:"Cape Verde",capeverde:"Cape Verde",curacao:"Curacao",bosniaherzegovina:"Bosnia",bosniaandherzegovina:"Bosnia",bosnia:"Bosnia",southkorea:"South Korea",korearepublic:"South Korea",republicofkorea:"South Korea",iranislamicrepublic:"Iran",czechrepublic:"Czechia",czechia:"Czechia"};
 function resolveTeam(n){const k=normalize(n);return CANON_NORM[k]||ALIAS[k]||null;}
 const FIX_BY_PAIR={};MATCHES.forEach((m,i)=>{FIX_BY_PAIR[[m.h,m.a].sort().join('|')]=i;});
-const ESPN_EVENTS={};let ESPN_SCORERS={};let lastOk=null;
+const ESPN_EVENTS={};let ESPN_SCORERS={};let ESPN_PENS={};let lastOk=null;
+/* aggregated from per-match summaries (assists/saves/cards) */
+const MATCH_STATS={};let ESPN_ASSISTS={},ESPN_SAVES={},ESPN_CARDS={};
+let sweepState={done:0,total:0,running:false};
 function ymd(d){return ''+d.getUTCFullYear()+String(d.getUTCMonth()+1).padStart(2,'0')+String(d.getUTCDate()).padStart(2,'0');}
 const ALL_DAYS=(()=>{const a=[];for(let i=11;i<=27;i++)a.push('202606'+String(i).padStart(2,'0'));return a;})();
 function currentWindow(){const now=NOW(),a=[];for(let o=-1;o<=1;o++)a.push(ymd(new Date(now.getTime()+o*864e5)));return a;}
@@ -1327,12 +1338,13 @@ function applyEvent(ev){
       const ath=d.athletesInvolved&&d.athletesInvolved[0];if(!ath)return;const nm=ath.displayName||ath.shortName;if(!nm)return;
       const tc=resolveTeam(d.team&&(d.team.displayName||d.team.name))||'';
       const k=nm+'|'+tc;(ESPN_SCORERS[k]=ESPN_SCORERS[k]||{name:nm,team:tc,goals:0});
-      if(!/own goal/i.test(tp))ESPN_SCORERS[k].goals++;
+      if(!/own goal/i.test(tp)){ESPN_SCORERS[k].goals++;
+        if(/penalt/i.test(tp)){(ESPN_PENS[k]=ESPN_PENS[k]||{name:nm,team:tc,pens:0}).pens++;}}
     });
   }catch(e){}
 }
 function rebuild(){
-  ESPN_SCORERS={};
+  ESPN_SCORERS={};ESPN_PENS={};
   Object.values(SQUADS).forEach(sq=>sq.players.forEach(p=>p.g=0));
   Object.values(ESPN_EVENTS).forEach(applyEvent);
   Object.values(ESPN_SCORERS).forEach(s=>{const sq=SQUADS[s.team];if(!sq)return;const pl=sq.players.find(p=>normalize(p.name)===normalize(s.name));if(pl)pl.g=s.goals;});
@@ -1342,6 +1354,65 @@ function renderScorers(){
   const arr=Object.values(ESPN_SCORERS).filter(s=>s.goals>0).sort((a,b)=>b.goals-a.goals||a.name.localeCompare(b.name)).slice(0,15);
   if(!arr.length){el.className='hint';el.textContent='No goals recorded yet — the race begins with the opening matches.';return;}
   el.className='';el.innerHTML=arr.map((s,i)=>`<div class="scorer"><span class="rk">${i+1}</span><span>${esc(s.name)} <span class="tm tlink" data-team="${esc(s.team)}">${crest(s.team)} ${esc(s.team)}</span></span><span class="gg">${s.goals}</span></div>`).join('');
+}
+/* ---- per-match stats sweep: assists / saves / cards (from match summaries) ---- */
+function readStat(stats,name){const s=(stats||[]).find(x=>x.name===name);return s?(parseInt(s.value,10)||0):0;}
+async function fetchMatchStats(m){
+  if(!m.eventId||matchState(m)!=='ft'||MATCH_STATS[m.eventId])return;
+  try{
+    const j=await fetchSummary(m.eventId);const rows=[];
+    (j.rosters||[]).forEach(r=>{
+      const team=resolveTeam(r.team&&(r.team.displayName||r.team.name));if(!team)return;
+      (r.roster||[]).forEach(pl=>{
+        const nm=pl.athlete&&(pl.athlete.displayName||pl.athlete.shortName);if(!nm)return;
+        const a=readStat(pl.stats,'goalAssists'),sv=readStat(pl.stats,'saves'),yc=readStat(pl.stats,'yellowCards'),rc=readStat(pl.stats,'redCards');
+        if(a||sv||yc||rc)rows.push({name:nm,team,a,sv,yc,rc});
+      });
+    });
+    MATCH_STATS[m.eventId]=rows;
+  }catch(e){/* leave uncached; a later sweep retries */}
+}
+function rebuildPlayerStats(){
+  ESPN_ASSISTS={};ESPN_SAVES={};ESPN_CARDS={};
+  Object.values(SQUADS).forEach(sq=>sq.players.forEach(p=>{p.a=0;p.saves=0;p.yc=0;p.rc=0;}));
+  Object.values(MATCH_STATS).forEach(rows=>rows.forEach(r=>{
+    const k=r.name+'|'+r.team;
+    if(r.a){(ESPN_ASSISTS[k]=ESPN_ASSISTS[k]||{name:r.name,team:r.team,assists:0}).assists+=r.a;}
+    if(r.sv){(ESPN_SAVES[k]=ESPN_SAVES[k]||{name:r.name,team:r.team,saves:0}).saves+=r.sv;}
+    if(r.yc||r.rc){const c=(ESPN_CARDS[k]=ESPN_CARDS[k]||{name:r.name,team:r.team,yc:0,rc:0});c.yc+=r.yc;c.rc+=r.rc;}
+  }));
+  const link=(map,field,key)=>Object.values(map).forEach(s=>{const sq=SQUADS[s.team];if(!sq)return;const pl=sq.players.find(p=>normalize(p.name)===normalize(s.name));if(pl)pl[field]=s[key];});
+  link(ESPN_ASSISTS,'a','assists');link(ESPN_SAVES,'saves','saves');
+  Object.values(ESPN_CARDS).forEach(s=>{const sq=SQUADS[s.team];if(!sq)return;const pl=sq.players.find(p=>normalize(p.name)===normalize(s.name));if(pl){pl.yc=s.yc;pl.rc=s.rc;}});
+}
+async function sweepStats(){
+  if(sweepState.running)return;
+  const all=MATCHES.filter(m=>m.eventId&&matchState(m)==='ft');
+  sweepState.total=all.length;sweepState.done=all.filter(m=>MATCH_STATS[m.eventId]).length;
+  const todo=all.filter(m=>!MATCH_STATS[m.eventId]);
+  if(!todo.length){renderLeaders();return;}
+  sweepState.running=true;
+  let i=0;const POOL=3;
+  async function worker(){while(i<todo.length){await fetchMatchStats(todo[i++]);sweepState.done=all.filter(x=>MATCH_STATS[x.eventId]).length;rebuildPlayerStats();renderLeaders();}}
+  await Promise.all(Array.from({length:Math.min(POOL,todo.length)},worker));
+  sweepState.running=false;rebuildPlayerStats();renderLeaders();
+}
+function leaderRows(arr,fmt){
+  return arr.map((s,i)=>`<div class="scorer"><span class="rk">${i+1}</span><span>${esc(s.name)} <span class="tm tlink" data-team="${esc(s.team)}">${crest(s.team)} ${esc(s.team)}</span></span><span class="gg">${fmt(s)}</span></div>`).join('');
+}
+function renderLeaders(){
+  const set=(id,arr,empty,fmt)=>{const el=document.getElementById(id);if(!el)return;if(!arr.length){el.className='hint';el.textContent=empty;return;}el.className='';el.innerHTML=leaderRows(arr,fmt);};
+  const byName=(a,b)=>a.name.localeCompare(b.name);
+  set('assistLeaders',Object.values(ESPN_ASSISTS).filter(s=>s.assists>0).sort((a,b)=>b.assists-a.assists||byName(a,b)).slice(0,12),'No assists recorded yet.',s=>s.assists);
+  set('saveLeaders',Object.values(ESPN_SAVES).filter(s=>s.saves>0).sort((a,b)=>b.saves-a.saves||byName(a,b)).slice(0,12),'No saves recorded yet.',s=>s.saves);
+  set('penLeaders',Object.values(ESPN_PENS).filter(s=>s.pens>0).sort((a,b)=>b.pens-a.pens||byName(a,b)).slice(0,12),'No penalty-kick goals yet.',s=>s.pens);
+  set('cardLeaders',Object.values(ESPN_CARDS).filter(s=>s.yc||s.rc).sort((a,b)=>(b.rc*2+b.yc)-(a.rc*2+a.yc)||byName(a,b)).slice(0,12),'No cards recorded yet.',s=>`${s.yc?'🟨'+s.yc+' ':''}${s.rc?'🟥'+s.rc:''}`.trim());
+  const note=document.getElementById('statsSweepNote');
+  if(note){
+    if(sweepState.total>0&&sweepState.done<sweepState.total)note.textContent=`Assists & saves: aggregating ${sweepState.done}/${sweepState.total} finished matches…`;
+    else if(sweepState.total>0)note.textContent=`Assists, saves & cards aggregated from all ${sweepState.total} finished match${sweepState.total>1?'es':''}.`;
+    else note.textContent='';
+  }
 }
 function updateLiveUI(stx){
   const dot=document.getElementById('liveDot'),txt=document.getElementById('liveText');if(!dot)return;
@@ -1453,7 +1524,7 @@ function renderLiveNow(){
   html+=`</div>`;
   box.innerHTML=html;
 }
-function renderAll(){renderLiveNow();renderSchedule();renderGroups();renderStatus();renderScorers();if(document.getElementById('stats').classList.contains('active'))renderStatsCharts();if(currentView==='team'&&currentTeam&&ovBack.classList.contains('open'))openTeam(currentTeam,true);if(currentMatchIdx!=null&&matchBack.classList.contains('open')){const m=MATCHES[currentMatchIdx];if(m&&matchState(m)==='live')paintMatch(m,'live');}}
+function renderAll(){renderLiveNow();renderSchedule();renderGroups();renderStatus();renderScorers();renderLeaders();if(document.getElementById('stats').classList.contains('active'))renderStatsCharts();if(currentView==='team'&&currentTeam&&ovBack.classList.contains('open'))openTeam(currentTeam,true);if(currentMatchIdx!=null&&matchBack.classList.contains('open')){const m=MATCHES[currentMatchIdx];if(m&&matchState(m)==='live')paintMatch(m,'live');}}
 async function poll(days){
   try{
     const lists=await Promise.all(days.map(d=>fetchDay(d).catch(()=>null)));
@@ -1466,6 +1537,7 @@ async function poll(days){
 }
 async function startLive(){
   await poll(ALL_DAYS);                                  // one-time backfill of all group-stage results
+  sweepStats();                                          // background sweep of finished-match summaries (assists/saves/cards)
   if(window.__wcTimer)clearInterval(window.__wcTimer);
   window.__wcTimer=setInterval(()=>poll(currentWindow()),30000);  // poll active window every 30s
 }
