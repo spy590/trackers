@@ -15,8 +15,7 @@ Deploying is just `git push` — GitHub Pages redeploys automatically.
 ## Adding a tracker
 
 1. Drop a self-contained `.html` file in the repo root.
-2. Add a `<a class="card">` entry in `index.html`.
-3. Push.
+2. Push. Each tracker is shared via its own direct URL (there is no landing page / `index.html`).
 
 ## Architecture
 

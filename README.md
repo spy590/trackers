@@ -1,8 +1,6 @@
 # Trackers
 
-Self-contained HTML trackers, served via GitHub Pages.
-
-Landing page: https://spy590.github.io/trackers/
+Self-contained HTML trackers, served via GitHub Pages. Each tracker is shared via its own direct URL (there is no landing page).
 
 ## Trackers
 
@@ -11,5 +9,4 @@ Landing page: https://spy590.github.io/trackers/
 ## Adding a tracker
 
 1. Drop the self-contained `.html` file in the repo root with a descriptive name.
-2. Add a `<li>` card linking to it in `index.html`.
-3. Add a bullet here. Commit + push — Pages redeploys automatically.
+2. Add a bullet here. Commit + push — Pages redeploys automatically.
