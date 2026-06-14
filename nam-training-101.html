@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>How NAM Learns Your Amp — an ML primer for SWEs</title>
+<!--
+  NAM Training 101 — WI-106. A self-contained, file://-safe interactive lesson.
+  Audience: a senior software engineer who is new to machine learning.
+  All ESR numbers are real, from the owner's Friedman IRJ 4d Hi runs (2026-06-14):
+    A1-Standard (old, 500 ep) 0.00565 · A2-Full 0.00568 · A2-Lite 0.02598 · app slimmable 0.078 · misaligned ~0.43
+  Design tokens mirror mockups/css/theme-dark-pro.css.
+-->
+<style>
+  :root {
+    --c-bg:#0E0F12; --c-surface:#16181D; --c-well:#0A0B0E; --c-border:#2A2E37;
+    --c-text:#EDEEF2; --c-text-muted:#A6ABB6; --c-text-dim:#6C7280;
+    --c-accent:#FF7A33; --c-accent-contrast:#1A1206;
+    --c-success:#3DD68C; --c-warn:#F2C14E; --c-danger:#FF5A52;
+    --c-info:#5AA9FF;
+    --shadow:0 6px 24px rgba(0,0,0,.45); --shadow-lg:0 14px 44px rgba(0,0,0,.58);
+    --radius:14px; --radius-sm:9px;
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif;
+  }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    margin:0; background:var(--c-bg); color:var(--c-text); font-family:var(--sans);
+    line-height:1.6; font-size:16px; -webkit-font-smoothing:antialiased;
+  }
+  .wrap { max-width:920px; margin:0 auto; padding:0 24px 120px; }
+
+  header.hero {
+    padding:64px 0 40px; border-bottom:1px solid var(--c-border); margin-bottom:8px;
+  }
+  .kicker { font-family:var(--mono); font-size:12px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--c-accent); margin:0 0 14px; }
+  h1 { font-size:40px; line-height:1.1; margin:0 0 16px; letter-spacing:-.02em; }
+  .sub { font-size:18px; color:var(--c-text-muted); max-width:680px; margin:0; }
+  .swenote { margin-top:22px; padding:14px 18px; border-left:3px solid var(--c-accent);
+    background:linear-gradient(90deg, rgba(255,122,51,.08), transparent);
+    border-radius:0 var(--radius-sm) var(--radius-sm) 0; color:var(--c-text); font-size:15px; }
+  .swenote b { color:var(--c-accent); }
+
+  /* progress rail */
+  .toc { position:sticky; top:0; z-index:20; background:rgba(14,15,18,.86); backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--c-border); margin:0 -24px 40px; padding:10px 24px; display:flex;
+    gap:6px; flex-wrap:wrap; font-family:var(--mono); font-size:11px; }
+  .toc a { color:var(--c-text-dim); text-decoration:none; padding:4px 9px; border-radius:999px;
+    border:1px solid transparent; white-space:nowrap; }
+  .toc a:hover { color:var(--c-text); border-color:var(--c-border); }
+
+  section.stage { padding:44px 0; border-bottom:1px solid var(--c-border); scroll-margin-top:56px; }
+  .stage-n { font-family:var(--mono); font-size:13px; color:var(--c-accent); letter-spacing:.1em; }
+  h2 { font-size:27px; margin:6px 0 14px; letter-spacing:-.01em; }
+  p { margin:0 0 16px; }
+  .stage p { color:var(--c-text); }
+  .muted { color:var(--c-text-muted); }
+  code { font-family:var(--mono); font-size:.88em; background:var(--c-well); padding:2px 6px;
+    border-radius:5px; border:1px solid var(--c-border); color:#FFD9B8; }
+  strong { color:#fff; }
+
+  /* ML concept callout */
+  .ml { margin:20px 0 4px; border:1px solid var(--c-border); border-radius:var(--radius);
+    background:var(--c-surface); overflow:hidden; box-shadow:var(--shadow); }
+  .ml > summary { cursor:pointer; list-style:none; padding:14px 18px; display:flex; align-items:center;
+    gap:12px; font-weight:600; }
+  .ml > summary::-webkit-details-marker { display:none; }
+  .ml .tag { font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--c-info); border:1px solid rgba(90,169,255,.4); border-radius:999px; padding:3px 9px;
+    background:rgba(90,169,255,.08); white-space:nowrap; }
+  .ml .term { color:var(--c-text); }
+  .ml .chev { margin-left:auto; color:var(--c-text-dim); transition:transform .2s; font-family:var(--mono); }
+  .ml[open] .chev { transform:rotate(90deg); }
+  .ml .body { padding:0 18px 18px 18px; color:var(--c-text-muted); font-size:15px; border-top:1px solid var(--c-border);
+    padding-top:14px; }
+  .ml .body .swe { color:var(--c-text); }
+  .ml .body b { color:var(--c-accent); }
+
+  /* interactive panels */
+  .panel { margin:24px 0; background:var(--c-well); border:1px solid var(--c-border);
+    border-radius:var(--radius); padding:18px; box-shadow:var(--shadow-lg); }
+  canvas { width:100%; display:block; border-radius:var(--radius-sm); background:#08090C; }
+  .controls { display:flex; flex-wrap:wrap; gap:18px 26px; align-items:center; margin-top:16px;
+    font-family:var(--mono); font-size:12.5px; }
+  .controls .grp { display:flex; flex-direction:column; gap:6px; }
+  .controls label { color:var(--c-text-dim); text-transform:uppercase; letter-spacing:.08em; font-size:10.5px; }
+  .controls input[type=range] { width:170px; accent-color:var(--c-accent); }
+  .btn { font:inherit; font-family:var(--mono); cursor:pointer; border:1px solid var(--c-border);
+    background:var(--c-surface); color:var(--c-text); padding:8px 16px; border-radius:999px; }
+  .btn.primary { background:var(--c-accent); color:var(--c-accent-contrast); border-color:transparent; font-weight:700; }
+  .btn:active { transform:translateY(1px); }
+  .toggle { display:flex; align-items:center; gap:9px; cursor:pointer; user-select:none; }
+  .toggle input { accent-color:var(--c-danger); width:16px; height:16px; }
+  .readouts { display:flex; gap:26px; margin-top:14px; font-family:var(--mono); flex-wrap:wrap; }
+  .ro { display:flex; flex-direction:column; }
+  .ro .k { font-size:10.5px; color:var(--c-text-dim); text-transform:uppercase; letter-spacing:.08em; }
+  .ro .v { font-size:22px; color:var(--c-text); font-variant-numeric:tabular-nums; }
+  .ro .v.esr { color:var(--c-success); }
+  .ro .v.warn { color:var(--c-danger); }
+  .legend { display:flex; gap:18px; font-family:var(--mono); font-size:11.5px; color:var(--c-text-muted);
+    margin-top:10px; flex-wrap:wrap; }
+  .legend .sw { display:inline-block; width:22px; height:0; border-top-width:3px; border-top-style:solid;
+    vertical-align:middle; margin-right:7px; }
+
+  /* data tables */
+  table { width:100%; border-collapse:collapse; margin:18px 0; font-size:14px; }
+  th,td { text-align:left; padding:9px 12px; border-bottom:1px solid var(--c-border); }
+  th { font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--c-text-dim); }
+  td.num { font-family:var(--mono); text-align:right; font-variant-numeric:tabular-nums; }
+  tr.hi td { color:#fff; }
+  .pill { font-family:var(--mono); font-size:11px; padding:2px 8px; border-radius:999px; }
+  .pill.good { background:rgba(61,214,140,.14); color:var(--c-success); }
+  .pill.bad { background:rgba(255,90,82,.14); color:var(--c-danger); }
+  .pill.meh { background:rgba(242,193,78,.14); color:var(--c-warn); }
+
+  footer { padding:48px 0 0; color:var(--c-text-dim); font-size:13px; font-family:var(--mono); }
+  a.ref { color:var(--c-info); }
+</style>
+</head>
+<body>
+<nav class="toc">
+  <a href="#s1">1 · Data</a><a href="#s2">2 · Alignment</a><a href="#s3">3 · The model</a>
+  <a href="#s4">4 · Training loop</a><a href="#s5">5 · Best epoch</a><a href="#s6">6 · Full/Lite</a>
+  <a href="#s7">7 · The ESR floor</a><a href="#s8">8 · The artifact</a>
+</nav>
+
+<div class="wrap">
+  <header class="hero">
+    <p class="kicker">NAM Training 101 · interactive</p>
+    <h1>How a neural net learns to <em>be</em> your amp</h1>
+    <p class="sub">A walk through the NAM A2 capture → train → model flow, with the core machine-learning
+      idea behind each step. Built for a strong software engineer who's new to ML.</p>
+    <div class="swenote"><b>If you already know this, you know most of ML:</b> training is just
+      <b>iterative optimization of a big pile of numbers</b> against an error metric — a loop that nudges
+      serialized state toward a goal, over and over, keeping the best version it sees. That's the whole game.
+      Everything below is that idea, made concrete with your own Friedman capture.</div>
+  </header>
+
+  <!-- 1 -->
+  <section class="stage" id="s1">
+    <div class="stage-n">STAGE 01</div>
+    <h2>The data: a matched pair</h2>
+    <p>You played a fixed <strong>dry</strong> reference signal (NAM's standardized sweep) into your amp and
+      recorded the <strong>wet</strong> output. That pair — <code>input.wav</code> → <code>output.wav</code> — is the
+      entire training set. The model's job: given the dry sample, predict the wet sample your amp would produce.</p>
+    <p class="muted">There's no giant labeled dataset here. One ~3-minute reamp pair <em>is</em> the data. The
+      sweep is designed to exercise the amp across dynamics and frequencies so a few minutes is enough.</p>
+    <details class="ml">
+      <summary><span class="tag">ML concept</span><span class="term">Supervised learning &middot; (X → Y) regression</span><span class="chev">›</span></summary>
+      <div class="body"><span class="swe">You hand the algorithm matched <b>inputs (X = dry)</b> and <b>targets (Y = wet)</b> and ask it to
+        learn the function <code>f(X) ≈ Y</code>. Because the output is a continuous waveform (not a category),
+        it's <b>regression</b>, not classification. Think of it as fitting a curve — just one with millions of
+        knobs instead of slope + intercept.</span></div>
+    </details>
+  </section>
+
+  <!-- 2 -->
+  <section class="stage" id="s2">
+    <div class="stage-n">STAGE 02</div>
+    <h2>Alignment: line the pair up to the sample</h2>
+    <p>The wet signal lags the dry by some samples (converters, the rig, cabling). Before training, NAM measures
+      that delay from calibration blips in the sweep and shifts the pair so dry sample <code>n</code> matches wet
+      sample <code>n</code>. On your capture the true delay was <strong>22 samples</strong> (~0.5&nbsp;ms).</p>
+    <p class="muted">This is the unglamorous step that decides everything. Our app first guessed the delay with a
+      cross-correlation and got <strong>101</strong> — a 79-sample error. The model then trained on
+      <em>mismatched</em> pairs and could never do well (ESR stuck ~0.43), no matter how long it trained. Garbage
+      alignment in → an error floor no training can climb out of. (You'll feel this in Stage 7's toggle.)</p>
+    <details class="ml">
+      <summary><span class="tag">ML concept</span><span class="term">Data preprocessing &middot; label alignment</span><span class="chev">›</span></summary>
+      <div class="body"><span class="swe">Models are only as good as the (X, Y) pairing you feed them. A constant offset between input and
+        label means you're teaching the net to predict <code>output[n]</code> from the <i>wrong</i> slice of input — a
+        systematic labeling error. <b>It caps achievable accuracy regardless of model size or training time.</b>
+        "Garbage in, garbage out," but quantitative.</span></div>
+    </details>
+  </section>
+
+  <!-- 3 -->
+  <section class="stage" id="s3">
+    <div class="stage-n">STAGE 03</div>
+    <h2>The model: a function with millions of knobs</h2>
+    <p>The model is a <strong>WaveNet</strong> — a stack of 1-D convolutions. Concretely it's a function that takes
+      a window of recent dry samples and outputs one wet sample. To predict sample <code>n</code> it looks back over
+      a <strong>receptive field</strong> of ~6,000 samples (~132&nbsp;ms) — enough context to capture how an amp's
+      response depends on what just happened (sag, transients, decay).</p>
+    <p class="muted">The "knobs" are the network's <strong>weights</strong> — ~16k of them for the A2-Lite size,
+      more for Full. Untrained, they're random and the output is noise. Training is the process of setting them.</p>
+    <details class="ml">
+      <summary><span class="tag">ML concept</span><span class="term">Parameters / weights &middot; the model <i>is</i> its numbers</span><span class="chev">›</span></summary>
+      <div class="body"><span class="swe">A neural net is a fixed <b>architecture</b> (the wiring — chosen up front) plus a big vector of
+        <b>weights</b> (the learnable numbers). The architecture is your code; the weights are the <i>config/state</i>
+        the optimizer fills in. A trained <code>.nam</code> file is literally that weight vector serialized — nothing
+        more mysterious than a saved settings blob.</span></div>
+    </details>
+  </section>
+
+  <!-- 4 — centerpiece -->
+  <section class="stage" id="s4">
+    <div class="stage-n">STAGE 04 · interactive</div>
+    <h2>The training loop: nudge, measure, repeat</h2>
+    <p>Now the core. We run <strong>epochs</strong> — full passes over the data. Each epoch is split into
+      <strong>steps</strong> (batches). For every step: <strong>(1)</strong> push dry through the net to predict wet
+      (forward pass), <strong>(2)</strong> measure how wrong it is with a <strong>loss</strong> — NAM uses
+      <strong>ESR</strong> (error-to-signal ratio; lower = closer to your real amp), <strong>(3)</strong>
+      <strong>backprop</strong> computes which way to nudge every weight, <strong>(4)</strong> the
+      <strong>optimizer</strong> takes a small step in that direction. The <em>same</em> weights carry into the next
+      epoch — each pass builds on the last. Watch the orange prediction crawl onto the green target as ESR falls:</p>
+
+    <div class="panel">
+      <canvas id="wave" height="240" aria-label="prediction vs target waveform"></canvas>
+      <div class="legend">
+        <span><span class="sw" style="border-color:#3DD68C;border-top-style:dashed"></span>Target (your amp)</span>
+        <span><span class="sw" style="border-color:#FF7A33"></span>Model prediction</span>
+        <span><span class="sw" style="border-color:#5AA9FF"></span>ESR vs epoch</span>
+      </div>
+      <div class="readouts">
+        <div class="ro"><span class="k">Epoch</span><span class="v" id="ro-epoch">0 / 500</span></div>
+        <div class="ro"><span class="k">Validation ESR</span><span class="v esr" id="ro-esr">—</span></div>
+        <div class="ro"><span class="k">Learning rate</span><span class="v" id="ro-lr">0.004</span></div>
+        <div class="ro"><span class="k">Status</span><span class="v" id="ro-status" style="font-size:15px">idle</span></div>
+      </div>
+      <div class="controls">
+        <button class="btn primary" id="play">▶ Train</button>
+        <button class="btn" id="reset">↻ Reset weights</button>
+        <div class="grp"><label>Scrub epoch</label><input type="range" id="scrub" min="0" max="500" value="0" /></div>
+        <div class="grp"><label>Learning rate</label><input type="range" id="lr" min="0" max="3" step="1" value="1" /></div>
+        <label class="toggle"><input type="checkbox" id="misalign" /> Break the alignment (Stage 2)</label>
+      </div>
+    </div>
+    <p class="muted">Try it: <strong>Train</strong> to watch convergence; drag <strong>Learning rate</strong> too high
+      and it diverges (overshoots), too low and it crawls; flip <strong>Break the alignment</strong> and notice the
+      prediction never locks on — ESR flattens at a high floor no matter the epoch.</p>
+
+    <details class="ml">
+      <summary><span class="tag">ML concept</span><span class="term">Gradient descent &middot; loss · backprop · learning rate</span><span class="chev">›</span></summary>
+      <div class="body"><span class="swe">The <b>loss</b> is a single number measuring wrongness (your objective to minimize).
+        <b>Backpropagation</b> is the chain rule run backwards through the network to get the <b>gradient</b> — the
+        direction in weight-space that reduces the loss fastest. <b>Gradient descent</b> steps the weights along it.
+        The <b>learning rate</b> is the step size: too big overshoots/diverges, too small wastes time. It's just
+        hill-descending on an error surface, one small step per batch. (An <b>epoch</b> = one full pass over the data;
+        a <b>step/batch</b> = one chunk of it — like processing a dataset page-by-page.)</span></div>
+    </details>
+  </section>
+
+  <!-- 5 -->
+  <section class="stage" id="s5">
+    <div class="stage-n">STAGE 05</div>
+    <h2>Keep the best epoch, not the last</h2>
+    <p>It's <strong>one continuous run</strong>, not many attempts — a common first assumption. But NAM holds out a
+      slice of your capture it never trains on (a <strong>validation</strong> set), scores the model on it after every
+      epoch, and snapshots whichever epoch scores best. On your 100-epoch A2-Full run the <em>exported</em> model was
+      from <strong>epoch 94</strong>, not 100 — the last few epochs were no better, so it kept 94.</p>
+    <p class="muted">Why hold data out? A model can start memorizing quirks of the training audio (noise, a specific
+      buzz) that don't generalize. The validation score catches that — if it stops improving while training loss keeps
+      dropping, you're <strong>overfitting</strong>, and the best-validation checkpoint is your safe pick.</p>
+    <details class="ml">
+      <summary><span class="tag">ML concept</span><span class="term">Train/validation split &middot; overfitting · checkpointing</span><span class="chev">›</span></summary>
+      <div class="body"><span class="swe">Hold out data the optimizer can't see, and judge on that — it's your unit test against
+        memorization. <b>Overfitting</b> = great on training data, worse on unseen data (fitting noise, not signal).
+        Saving the best-validation epoch is <b>model checkpointing</b> / early-stopping: the final artifact is the best
+        snapshot, not necessarily the final state. Like keeping your green CI build, not just the latest commit.</span></div>
+    </details>
+  </section>
+
+  <!-- 6 -->
+  <section class="stage" id="s6">
+    <div class="stage-n">STAGE 06</div>
+    <h2>One model, two sizes (A2 Full &amp; Lite)</h2>
+    <p>A2 trains a <strong>packed</strong> model: two sub-networks in one run — <code>channels_8</code> (<strong>Full</strong>,
+      pro audio) and <code>channels_3</code> (<strong>Lite</strong>, low-CPU/embedded). One training pass, one
+      <code>.nam</code>, two playable sizes. More channels = more capacity = lower error but more compute. On your
+      capture, Full hit <strong>ESR 0.00568</strong> and Lite <strong>0.02598</strong> — both good, Full noticeably
+      tighter (exactly what its prediction-vs-target overlay showed).</p>
+    <details class="ml">
+      <summary><span class="tag">ML concept</span><span class="term">Model capacity &middot; the accuracy ↔ size trade-off</span><span class="chev">›</span></summary>
+      <div class="body"><span class="swe">More parameters = more <b>capacity</b> to fit a complex function, at the cost of memory and
+        per-sample compute. Picking a size is the classic engineering trade-off: a bigger binary that's more accurate
+        vs. a small one that runs on a $3 chip. "Slimmable/packed" nets get both from a single train by sharing weights
+        across widths — like shipping <code>-O0</code> and <code>-O3</code> from one build.</span></div>
+    </details>
+  </section>
+
+  <!-- 7 -->
+  <section class="stage" id="s7">
+    <div class="stage-n">STAGE 07</div>
+    <h2>The ESR floor: where does accuracy bottom out?</h2>
+    <p>More epochs help — until they don't. Loss falls fast early, then flattens as the model approaches the best it
+      can do for its size and data. Past that, extra epochs barely move it. Your runs make the point precisely:</p>
+    <table>
+      <thead><tr><th>Run</th><th>Recipe</th><th>Epochs</th><th class="num">ESR</th><th></th></tr></thead>
+      <tbody>
+        <tr><td>App (alignment bug)</td><td>slimmable</td><td class="num">100</td><td class="num">0.4493</td><td><span class="pill bad">broken</span></td></tr>
+        <tr><td>App (alignment bug)</td><td>slimmable</td><td class="num">500</td><td class="num">0.4258</td><td><span class="pill bad">epochs don't help</span></td></tr>
+        <tr><td>App (delay fixed)</td><td>slimmable</td><td class="num">100</td><td class="num">0.0782</td><td><span class="pill meh">wrong recipe</span></td></tr>
+        <tr class="hi"><td>Official A2-Lite</td><td>packed · channels_3</td><td class="num">100</td><td class="num">0.02598</td><td><span class="pill good">good</span></td></tr>
+        <tr class="hi"><td>Official A2-Full</td><td>packed · channels_8</td><td class="num">100</td><td class="num">0.00568</td><td><span class="pill good">excellent</span></td></tr>
+        <tr><td>Your original</td><td>A1-Standard</td><td class="num">500</td><td class="num">0.00565</td><td><span class="pill good">reference</span></td></tr>
+      </tbody>
+    </table>
+    <p class="muted">Two different "floors" show up here. The healthy floor is <strong>capacity</strong> — A2-Full can
+      reach ~0.006 because it has the size + the right recipe. The pathological floor is <strong>bad data</strong> —
+      the misaligned run sits at ~0.43 forever (you saw it in Stage 4's toggle). And note the recipe matters more than
+      epochs: same 100-epoch budget, the packed A2-Full (0.006) beat our slimmable (0.078) by ~14×.</p>
+    <details class="ml">
+      <summary><span class="tag">ML concept</span><span class="term">Convergence &middot; diminishing returns · irreducible error</span><span class="chev">›</span></summary>
+      <div class="body"><span class="swe">Training <b>converges</b> — the loss curve is steep then asymptotic, like cache hit-rate vs. cache
+        size. The asymptote is set by model capacity + data quality. Beyond it lies <b>irreducible error</b>: noise and
+        mislabeling you can't train away. Throwing epochs at an irreducible floor is wasted compute — the fix is better
+        data (alignment) or a better model (recipe/capacity), not more iterations.</span></div>
+    </details>
+  </section>
+
+  <!-- 8 -->
+  <section class="stage" id="s8">
+    <div class="stage-n">STAGE 08</div>
+    <h2>The artifact: a <code>.nam</code> is just the learned numbers</h2>
+    <p>When training stops, NAM exports the best weights to a <code>.nam</code> file (JSON: the architecture descriptor +
+      the weight vector + metadata like loudness and gear name). Loading it into a plugin or the A2 pedal is
+      <strong>inference</strong> — running that same function forward, in real time, on your live guitar. No training,
+      no gradients; just <code>f(dry) → wet</code>, sample by sample.</p>
+    <p class="muted">That's the round trip: capture a pair → align it → optimize a few million weights against an error
+      metric → keep the best snapshot → serialize → play it back. The "AI amp" is a saved function.</p>
+    <details class="ml">
+      <summary><span class="tag">ML concept</span><span class="term">Inference &middot; a trained model is a deployable function</span><span class="chev">›</span></summary>
+      <div class="body"><span class="swe">Two phases, like build vs. run: <b>training</b> (expensive, offline, produces weights) and
+        <b>inference</b> (cheap, real-time, consumes weights). Shipping the <code>.nam</code> is shipping a compiled
+        artifact; the device just executes it. Everything you learned here happens once, at "build time"; your amp tone
+        is the runtime.</span></div>
+    </details>
+  </section>
+
+  <footer>
+    NAM Training 101 · WI-106 · numbers are real, from the Friedman IRJ 4d Hi runs (2026-06-14).
+    See <span class="ref">docs/nam-capture-studio-a2-training-findings.md</span> for the full investigation.
+  </footer>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  // ---- real ESR targets (floors the animation converges toward) -----------
+  const FLOOR = { aligned: 0.00568, misaligned: 0.43 };   // A2-Full vs misaligned
+  const START_ESR = 0.55;                                  // epoch-0 error
+  const MAX_EPOCH = 500;
+  const TAU = { 0:64, 1:30, 2:14, 3:7 };                   // LR setting -> decay constant (epochs)
+  const DIVERGE_LR = 3;                                    // top LR setting overshoots
+
+  // ---- a representative "guitar-ish" target waveform (attack/decay bursts) -
+  const N = 600;
+  const target = new Float32Array(N);
+  (function buildTarget(){
+    let env = 0;
+    for (let i=0;i<N;i++){
+      // periodic plucks: sharp attack, exponential decay, with harmonics
+      const t = i/N;
+      const pluck = (i % 150);
+      if (pluck === 0) env = 1;
+      env *= 0.985;
+      const f = 0.20, h = 0.10;
+      target[i] = env * (Math.sin(i*f) + 0.5*Math.sin(i*f*2 + 0.6) + 0.25*Math.sin(i*f*4))
+                    * (0.6 + 0.4*Math.sin(t*6.28*1.5));
+    }
+    // normalize
+    let m=0; for (let i=0;i<N;i++) m=Math.max(m,Math.abs(target[i]));
+    for (let i=0;i<N;i++) target[i] = target[i]/m*0.85;
+  })();
+
+  // deterministic pseudo-noise so "reset" is stable per-index
+  const noise = new Float32Array(N);
+  (function(){ let s=1234567; for(let i=0;i<N;i++){ s=(s*1103515245+12345)&0x7fffffff; noise[i]=(s/0x7fffffff)*2-1; } })();
+
+  // ESR for a given epoch under current settings
+  function esrAt(epoch, lrSetting, misaligned){
+    const floor = misaligned ? FLOOR.misaligned : FLOOR.aligned;
+    if (lrSetting === DIVERGE_LR && !misaligned){
+      // diverges: error grows/oscillates instead of settling
+      return Math.min(0.9, START_ESR + 0.4*Math.abs(Math.sin(epoch/6)) * Math.min(1, epoch/40));
+    }
+    const tau = TAU[lrSetting] ?? 30;
+    return floor + (START_ESR - floor) * Math.exp(-epoch/tau);
+  }
+  // how far the prediction deviates from target, scaled to current ESR
+  function predictionAt(i, epoch, lrSetting, misaligned){
+    const esr = esrAt(epoch, lrSetting, misaligned);
+    const dev = Math.sqrt(Math.max(0, (esr - (misaligned?FLOOR.misaligned*0.3:0)) / START_ESR));
+    if (misaligned){
+      // a persistent phase/scale error that never resolves + shrinking hi-freq noise
+      const shifted = target[(i+18) % N];
+      return shifted*0.85 + noise[i]*0.16*dev + (target[i]-shifted)*0.0;
+    }
+    if (lrSetting === DIVERGE_LR){
+      return target[i]*(1 + 0.6*Math.sin(epoch/5)) + noise[i]*0.4*dev;
+    }
+    return target[i]*(1-0.12*dev) + noise[i]*0.55*dev;
+  }
+
+  // ---- canvas drawing ------------------------------------------------------
+  const cv = document.getElementById("wave");
+  const ctx = cv.getContext("2d");
+  function fit(){ const r=cv.getBoundingClientRect(); const d=window.devicePixelRatio||1;
+    cv.width=r.width*d; cv.height=240*d; ctx.setTransform(d,0,0,d,0,0); }
+  window.addEventListener("resize", ()=>{ fit(); draw(); });
+
+  let epoch = 0, playing = false, lrSetting = 1, misaligned = false, bestEpoch = 0, bestEsr = Infinity;
+
+  function draw(){
+    const W = cv.getBoundingClientRect().width, H = 240;
+    ctx.clearRect(0,0,W,H);
+    const wavePad = 16, waveH = 150, waveTop = 14, midY = waveTop + waveH/2;
+    // grid baseline
+    ctx.strokeStyle = "rgba(255,255,255,.06)"; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(wavePad, midY); ctx.lineTo(W-wavePad, midY); ctx.stroke();
+
+    const xOf = i => wavePad + (i/(N-1))*(W-2*wavePad);
+    const yOf = v => midY - v*(waveH/2);
+
+    // target (green dashed)
+    ctx.strokeStyle = "#3DD68C"; ctx.lineWidth=2; ctx.setLineDash([5,4]); ctx.globalAlpha=.9;
+    ctx.beginPath(); for(let i=0;i<N;i++){ const x=xOf(i),y=yOf(target[i]); i?ctx.lineTo(x,y):ctx.moveTo(x,y);} ctx.stroke();
+    ctx.setLineDash([]);
+    // prediction (orange)
+    ctx.strokeStyle = "#FF7A33"; ctx.lineWidth=2; ctx.globalAlpha=1;
+    ctx.beginPath(); for(let i=0;i<N;i++){ const x=xOf(i),y=yOf(predictionAt(i,epoch,lrSetting,misaligned)); i?ctx.lineTo(x,y):ctx.moveTo(x,y);} ctx.stroke();
+
+    // ESR-vs-epoch mini chart (bottom strip)
+    const cTop = waveTop+waveH+18, cH = 44, cBot = cTop+cH;
+    ctx.strokeStyle="rgba(255,255,255,.06)"; ctx.beginPath(); ctx.moveTo(wavePad,cBot); ctx.lineTo(W-wavePad,cBot); ctx.stroke();
+    const logMin=Math.log10(0.004), logMax=Math.log10(0.9);
+    const ex = e => wavePad + (e/MAX_EPOCH)*(W-2*wavePad);
+    const ey = esr => { const l=Math.log10(Math.min(0.9,Math.max(0.004,esr))); return cBot - ((l-logMin)/(logMax-logMin))*cH; };
+    ctx.strokeStyle="#5AA9FF"; ctx.lineWidth=2; ctx.beginPath();
+    for(let e=0;e<=epoch;e+=2){ const x=ex(e), y=ey(esrAt(e,lrSetting,misaligned)); (e===0)?ctx.moveTo(x,y):ctx.lineTo(x,y); }
+    ctx.stroke();
+    // best-checkpoint marker
+    if (bestEsr<Infinity && !misaligned && lrSetting!==DIVERGE_LR){
+      const x=ex(bestEpoch), y=ey(bestEsr);
+      ctx.fillStyle="#3DD68C"; ctx.beginPath(); ctx.arc(x,y,4,0,6.28); ctx.fill();
+      ctx.fillStyle="#A6ABB6"; ctx.font="10px ui-monospace,monospace"; ctx.fillText("best", x+7, y+3);
+    }
+    ctx.fillStyle="#6C7280"; ctx.font="10px ui-monospace,monospace";
+    ctx.fillText("ESR (log)", wavePad, cTop-4); ctx.fillText("epoch →", W-wavePad-52, cBot+12);
+  }
+
+  // ---- readouts ------------------------------------------------------------
+  const elEpoch=document.getElementById("ro-epoch"), elEsr=document.getElementById("ro-esr"),
+        elLr=document.getElementById("ro-lr"), elStatus=document.getElementById("ro-status"),
+        scrub=document.getElementById("scrub"), lr=document.getElementById("lr"),
+        mis=document.getElementById("misalign"), playBtn=document.getElementById("play");
+  const LR_VALS=["0.0008","0.004","0.02","0.08 (too high)"];
+  function refresh(){
+    const esr=esrAt(epoch,lrSetting,misaligned);
+    if (esr<bestEsr && !(lrSetting===DIVERGE_LR&&!misaligned)){ bestEsr=esr; bestEpoch=epoch; }
+    elEpoch.textContent = epoch+" / "+MAX_EPOCH;
+    elEsr.textContent = esr.toFixed(5);
+    elEsr.className = "v esr"+(esr>0.2?" warn":"");
+    elLr.textContent = LR_VALS[lrSetting];
+    const diverge = lrSetting===DIVERGE_LR && !misaligned;
+    elStatus.textContent = misaligned ? "stuck (bad data)" : diverge ? "diverging" :
+      (epoch>=MAX_EPOCH ? "converged" : playing ? "training…" : "ready");
+    elStatus.style.color = misaligned||diverge ? "#FF5A52" : (epoch>=MAX_EPOCH?"#3DD68C":"#EDEEF2");
+    scrub.value = epoch;
+    draw();
+  }
+  function resetWeights(){ epoch=0; bestEsr=Infinity; bestEpoch=0; refresh(); }
+
+  let raf=null, last=0;
+  function loop(ts){
+    if(!playing) return;
+    if(ts-last>28){ last=ts; epoch=Math.min(MAX_EPOCH, epoch + (epoch<60?2:6)); refresh();
+      if(epoch>=MAX_EPOCH){ playing=false; playBtn.textContent="▶ Train"; } }
+    raf=requestAnimationFrame(loop);
+  }
+  playBtn.addEventListener("click",()=>{ playing=!playing;
+    if(playing){ if(epoch>=MAX_EPOCH) resetWeights(); playBtn.textContent="⏸ Pause"; last=0; raf=requestAnimationFrame(loop); }
+    else playBtn.textContent="▶ Train"; });
+  document.getElementById("reset").addEventListener("click",()=>{ playing=false; playBtn.textContent="▶ Train"; resetWeights(); });
+  scrub.addEventListener("input",e=>{ playing=false; playBtn.textContent="▶ Train"; epoch=+e.target.value;
+    bestEsr=Infinity;bestEpoch=0; for(let e2=0;e2<=epoch;e2+=2){const v=esrAt(e2,lrSetting,misaligned); if(v<bestEsr&&!(lrSetting===DIVERGE_LR&&!misaligned)){bestEsr=v;bestEpoch=e2;}} refresh(); });
+  lr.addEventListener("input",e=>{ lrSetting=+e.target.value; bestEsr=Infinity;bestEpoch=0;
+    for(let e2=0;e2<=epoch;e2+=2){const v=esrAt(e2,lrSetting,misaligned); if(v<bestEsr&&!(lrSetting===DIVERGE_LR&&!misaligned)){bestEsr=v;bestEpoch=e2;}} refresh(); });
+  mis.addEventListener("change",e=>{ misaligned=e.target.checked; bestEsr=Infinity;bestEpoch=0; refresh(); });
+
+  fit(); resetWeights();
+})();
+</script>
+</body>
+</html>
