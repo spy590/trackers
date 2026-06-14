@@ -9,6 +9,15 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+<script>
+/* Pre-paint theme: set data-theme on <html> before first paint to avoid FOUC */
+(function(){
+  try{
+    var t = localStorage.getItem('wc-theme');
+    if(t === 'vhs' || t === 'vhs-max') document.documentElement.setAttribute('data-theme', t);
+  }catch(e){}
+})();
+</script>
 <style>
 :root{
   color-scheme: dark;
@@ -21,6 +30,31 @@
   --shadow:0 2px 10px rgba(0,0,0,.45),0 0 0 1px rgba(177,74,237,.08);
   --glow-pink:0 0 8px rgba(255,43,214,.55),0 0 22px rgba(255,43,214,.3);
   --glow-cyan:0 0 8px rgba(22,224,255,.5),0 0 20px rgba(22,224,255,.28);
+}
+/* ===== Lo-Fi VHS palette: synthwave seen through a worn tape (shared by both VHS modes) ===== */
+html[data-theme^="vhs"]{
+  color-scheme: dark;
+  --bg:#1a1426; --card:#241a33; --ink:#e8ddd6; --muted:#9b8b9a;
+  --line:#473a52; --accent:#d16aa8; --accent2:#5fb6c4; --accent-soft:rgba(209,106,168,.12);
+  --gold:#d6b85f; --live:#d8585f; --chip:#332440;
+  --neon-pink:#d16aa8; --neon-cyan:#5fb6c4; --neon-purple:#9a73b8; --neon-orange:#d68a52;
+  --shadow:0 2px 10px rgba(0,0,0,.5),0 0 0 1px rgba(154,115,184,.06);
+  --glow-pink:0 0 6px rgba(209,106,168,.35),0 0 14px rgba(209,106,168,.18);
+  --glow-cyan:0 0 6px rgba(95,182,196,.32),0 0 12px rgba(95,182,196,.16);
+}
+html[data-theme^="vhs"] body{
+  background-image:
+    radial-gradient(120% 90% at 50% -10%, rgba(154,115,184,.18) 0%, rgba(26,20,38,0) 55%),
+    radial-gradient(90% 60% at 100% 0%, rgba(95,182,196,.08) 0%, rgba(26,20,38,0) 50%),
+    linear-gradient(180deg,#241a33 0%, #1a1426 60%);
+}
+html[data-theme^="vhs"] header.hero{
+  background:linear-gradient(135deg,#2e2238 0%, #4a2f50 38%, #7a4560 72%, #b07a4f 100%);
+  border-color:rgba(209,106,168,.3);
+}
+html[data-theme^="vhs"] header.hero::after{
+  background-image:linear-gradient(rgba(95,182,196,.3) 1px,transparent 1px),linear-gradient(90deg,rgba(95,182,196,.24) 1px,transparent 1px);
+  opacity:.35;
 }
 *{box-sizing:border-box}
 body{margin:0;color:var(--ink);
@@ -53,6 +87,15 @@ header.hero::after{content:"";position:absolute;left:-10%;right:-10%;bottom:-40%
   border:2px solid var(--neon-cyan);
   box-shadow:0 0 10px rgba(22,224,255,.8),0 0 22px rgba(255,43,214,.6),inset 0 0 12px rgba(0,0,0,.5);}
 .hero .spacer{flex:1}
+.theme-toggle{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;
+  font:700 11px/1 var(--display);letter-spacing:.6px;text-transform:uppercase;
+  color:#fff;cursor:pointer;padding:7px 11px;border-radius:999px;
+  background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.35);
+  box-shadow:var(--glow-cyan);transition:transform .12s ease,filter .12s ease;}
+.theme-toggle:hover{transform:translateY(-1px);filter:brightness(1.15);}
+.theme-toggle:focus-visible{outline:2px solid var(--accent2);outline-offset:2px;}
+.theme-toggle .tt-lbl{min-width:62px;text-align:left;}
+html[data-theme^="vhs"] .theme-toggle{box-shadow:none;border-color:rgba(255,255,255,.25);}
 .hero .meta{font-size:12px;opacity:.96;text-align:right;line-height:1.5;text-shadow:0 0 8px rgba(0,0,0,.5);}
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0 4px;}
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 13px;box-shadow:var(--shadow);}
@@ -255,6 +298,101 @@ table.stand tr.q2 td:first-child{box-shadow:inset 3px 0 0 var(--gold);}
   .venue-list{columns:1;}
   .hero .meta{text-align:left;}
 }
+
+/* ===== VHS OVERLAY LAYERS (disabled outside VHS themes) ===== */
+.vhs-grade,.vhs-fx,.vhs-track{display:none;}
+html[data-theme^="vhs"] .vhs-grade,
+html[data-theme^="vhs"] .vhs-fx,
+html[data-theme^="vhs"] .vhs-track{display:block;position:fixed;inset:0;pointer-events:none;}
+
+/* Color grade — backdrop-filter does NOT create a containing block for the page,
+   so position:fixed modals / sticky nav keep working. */
+html[data-theme^="vhs"] .vhs-grade{
+  z-index:88;
+  -webkit-backdrop-filter:saturate(.62) contrast(.92) brightness(1.06) sepia(.18);
+  backdrop-filter:saturate(.62) contrast(.92) brightness(1.06) sepia(.18);
+  background:linear-gradient(0deg, rgba(60,40,30,.10), rgba(40,30,50,.06));
+}
+html[data-theme="vhs-max"] .vhs-grade{
+  -webkit-backdrop-filter:saturate(.5) contrast(.88) brightness(1.08) sepia(.28);
+  backdrop-filter:saturate(.5) contrast(.88) brightness(1.08) sepia(.28);
+  background:linear-gradient(0deg, rgba(70,42,28,.14), rgba(44,30,52,.09));
+}
+
+/* Scanlines */
+html[data-theme^="vhs"] .vhs-fx{
+  z-index:90;
+  background-image:repeating-linear-gradient(to bottom,
+    rgba(0,0,0,.10) 0px, rgba(0,0,0,.10) 1px,
+    rgba(255,255,255,.012) 2px, rgba(255,255,255,.012) 3px);
+  background-size:100% 3px;
+}
+html[data-theme="vhs-max"] .vhs-fx{
+  background-image:repeating-linear-gradient(to bottom,
+    rgba(0,0,0,.18) 0px, rgba(0,0,0,.18) 1px,
+    rgba(255,255,255,.02) 2px, rgba(255,255,255,.02) 3px);
+}
+
+/* Film grain (animated fractalNoise) */
+html[data-theme^="vhs"] .vhs-fx::before{
+  content:"";position:absolute;inset:-50%;pointer-events:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/></svg>");
+  background-size:160px 160px;opacity:.07;mix-blend-mode:overlay;
+  animation:vhs-grain .5s steps(4) infinite;
+}
+html[data-theme="vhs-max"] .vhs-fx::before{opacity:.13;}
+@keyframes vhs-grain{
+  0%{transform:translate(0,0)} 25%{transform:translate(-6%,3%)}
+  50%{transform:translate(4%,-5%)} 75%{transform:translate(-3%,6%)}
+  100%{transform:translate(5%,-2%)}
+}
+
+/* Vignette + subtle CRT curvature */
+html[data-theme^="vhs"] .vhs-fx::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(120% 120% at 50% 50%,
+    rgba(0,0,0,0) 58%, rgba(0,0,0,.22) 88%, rgba(0,0,0,.45) 100%);
+  box-shadow:inset 0 0 120px rgba(0,0,0,.30), inset 0 0 40px rgba(0,0,0,.20);
+  border-radius:6px/14px;
+}
+html[data-theme="vhs-max"] .vhs-fx::after{
+  background:radial-gradient(120% 120% at 50% 50%,
+    rgba(0,0,0,0) 52%, rgba(0,0,0,.30) 86%, rgba(0,0,0,.58) 100%);
+  box-shadow:inset 0 0 140px rgba(0,0,0,.40), inset 0 0 48px rgba(0,0,0,.28);
+}
+
+/* Tracking / jitter band — Worn Tape only */
+html[data-theme^="vhs"] .vhs-track{z-index:91;display:none;}
+html[data-theme="vhs-max"] .vhs-track{
+  display:block;height:48px;inset:auto 0 auto 0;
+  background:linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.05) 30%,
+    rgba(255,255,255,.10) 50%, rgba(255,255,255,.04) 70%, rgba(255,255,255,0) 100%);
+  filter:blur(.5px);mix-blend-mode:screen;
+  animation:vhs-tracking 9s linear infinite;
+}
+@keyframes vhs-tracking{
+  0%,82%{transform:translateY(-60px);opacity:0;}
+  85%{opacity:.7;}
+  100%{transform:translateY(100vh);opacity:0;}
+}
+
+/* Chromatic aberration (text RGB fringe) — light in Lo-Fi, stronger in Worn Tape */
+html[data-theme="vhs"] .wrap{text-shadow:-.4px 0 0 rgba(255,0,80,.18), .4px 0 0 rgba(0,200,255,.16);}
+html[data-theme="vhs-max"] .wrap{text-shadow:-.7px 0 0 rgba(255,0,80,.35), .7px 0 0 rgba(0,200,255,.30);}
+/* don't let the fringe muddy elements that already use text-shadow for glow */
+html[data-theme^="vhs"] .hero h1,
+html[data-theme^="vhs"] .hero .meta,
+html[data-theme^="vhs"] .ov-title,
+html[data-theme^="vhs"] .dh,
+html[data-theme^="vhs"] .kpi .n{text-shadow:var(--glow-cyan);}
+html[data-theme="vhs-max"] .hero h1,
+html[data-theme="vhs-max"] .ov-title,
+html[data-theme="vhs-max"] .dh{text-shadow:-.7px 0 0 rgba(255,0,80,.4), .8px 0 0 rgba(0,200,255,.32);}
+
+@media (prefers-reduced-motion: reduce){
+  html[data-theme^="vhs"] .vhs-fx::before{animation:none;opacity:.06;}
+  html[data-theme^="vhs"] .vhs-track{display:none;}
+}
 </style>
 </head>
 <body>
@@ -266,6 +404,7 @@ table.stand tr.q2 td:first-child{box-shadow:inset 3px 0 0 var(--gold);}
       <div class="sub">Canada · Mexico · United States — 48 teams · 104 matches</div>
     </div>
     <div class="spacer"></div>
+    <button id="themeToggle" class="theme-toggle" type="button" title="Cycle theme (Synthwave / Lo-Fi / Worn Tape)"><span class="tt-ico">📼</span><span class="tt-lbl">Synthwave</span></button>
     <div class="meta">
       <div id="statusLine">Tournament status</div>
       <div id="nextLine"></div>
@@ -423,6 +562,11 @@ table.stand tr.q2 td:first-child{box-shadow:inset 3px 0 0 var(--gold);}
     <div class="ov-body" id="matchBody"></div>
   </div>
 </div>
+
+<!-- VHS overlay layers (only visible in VHS themes; non-interactive) -->
+<div class="vhs-grade" aria-hidden="true"></div>
+<div class="vhs-fx" aria-hidden="true"></div>
+<div class="vhs-track" aria-hidden="true"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
 <script>
@@ -940,9 +1084,23 @@ function renderVenues(){
 const VEN_COUNTRY={}; VENUES.forEach(([v,c,co])=>VEN_COUNTRY[c]=co);
 const TITLES=[["Brazil",5],["Germany",4],["Argentina",3],["France",2],["Uruguay",2],["England",1],["Spain",1]];
 const CHARTS={};
-/* synthwave chart defaults for the dark theme */
-if(window.Chart){Chart.defaults.color='#c6a9f0';Chart.defaults.borderColor='rgba(177,74,237,.18)';Chart.defaults.font.family="'Orbitron',system-ui,sans-serif";}
-const NEON=['#ff2bd6','#16e0ff','#b14aed','#ff7a18','#ffd23f','#39ff8b'];
+/* theme-aware chart palettes (Worn Tape reuses the faded vhs palette) */
+const CHART_PALETTES={
+  synthwave:{ text:'#c6a9f0', grid:'rgba(177,74,237,.18)', bar1:'#16e0ff', gold:'#ffd23f', pink:'#ff2bd6',
+              neon:['#ff2bd6','#16e0ff','#b14aed','#ff7a18','#ffd23f','#39ff8b'], donutBorder:'#190a36' },
+  vhs:{ text:'#9b8b9a', grid:'rgba(154,115,184,.18)', bar1:'#5fb6c4', gold:'#d6b85f', pink:'#d16aa8',
+        neon:['#d16aa8','#5fb6c4','#9a73b8','#d68a52','#d6b85f','#6fae84'], donutBorder:'#241a33' }
+};
+function chartPalette(){
+  return String(document.documentElement.getAttribute('data-theme')||'').startsWith('vhs')
+    ? CHART_PALETTES.vhs : CHART_PALETTES.synthwave;
+}
+let NEON=chartPalette().neon;
+function applyChartTheme(){
+  const p=chartPalette(); NEON=p.neon;
+  if(window.Chart){Chart.defaults.color=p.text;Chart.defaults.borderColor=p.grid;Chart.defaults.font.family="'Orbitron',system-ui,sans-serif";}
+}
+applyChartTheme();
 function mkChart(id,cfg){const c=document.getElementById(id);if(!c)return;if(CHARTS[id])CHARTS[id].destroy();CHARTS[id]=new Chart(c,cfg);}
 function statKPIs(){
   let players=0; const clubs=new Set();
@@ -954,25 +1112,26 @@ function statKPIs(){
 }
 function renderStatsCharts(){
   statKPIs();
+  const P=chartPalette();
   // by host city
   const cc={}; MATCHES.forEach(m=>cc[m.c]=(cc[m.c]||0)+1);
   const cl=Object.keys(cc).sort((a,b)=>cc[b]-cc[a]);
-  mkChart('cityChart',{type:'bar',data:{labels:cl,datasets:[{data:cl.map(l=>cc[l]),backgroundColor:'#16e0ff',borderRadius:5}]},
+  mkChart('cityChart',{type:'bar',data:{labels:cl,datasets:[{data:cl.map(l=>cc[l]),backgroundColor:P.bar1,borderRadius:5}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
     scales:{y:{beginAtZero:true,ticks:{stepSize:1}},x:{ticks:{maxRotation:60,minRotation:45,font:{size:10}}}}}});
   // by host nation (group stage)
   const nc={}; MATCHES.forEach(m=>{const co=VEN_COUNTRY[m.c]||'Other';nc[co]=(nc[co]||0)+1;});
   const nl=Object.keys(nc).sort((a,b)=>nc[b]-nc[a]);
-  mkChart('nationChart',{type:'doughnut',data:{labels:nl,datasets:[{data:nl.map(l=>nc[l]),backgroundColor:NEON,borderColor:'#190a36',borderWidth:2}]},
+  mkChart('nationChart',{type:'doughnut',data:{labels:nl,datasets:[{data:nl.map(l=>nc[l]),backgroundColor:NEON,borderColor:P.donutBorder,borderWidth:2}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11}}}}}});
   // past WC titles among participants
-  mkChart('titlesChart',{type:'bar',data:{labels:TITLES.map(x=>x[0]),datasets:[{data:TITLES.map(x=>x[1]),backgroundColor:'#ffd23f',borderRadius:5}]},
+  mkChart('titlesChart',{type:'bar',data:{labels:TITLES.map(x=>x[0]),datasets:[{data:TITLES.map(x=>x[1]),backgroundColor:P.gold,borderRadius:5}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
     scales:{y:{beginAtZero:true,ticks:{stepSize:1}},x:{ticks:{maxRotation:60,minRotation:45,font:{size:10}}}}}});
   // clubs supplying most players
   const club={}; Object.values(SQUADS).forEach(sq=>sq.players.forEach(p=>club[p.club]=(club[p.club]||0)+1));
   const top=Object.entries(club).sort((a,b)=>b[1]-a[1]).slice(0,12);
-  mkChart('clubsChart',{type:'bar',data:{labels:top.map(x=>x[0]),datasets:[{data:top.map(x=>x[1]),backgroundColor:'#ff2bd6',borderRadius:4}]},
+  mkChart('clubsChart',{type:'bar',data:{labels:top.map(x=>x[0]),datasets:[{data:top.map(x=>x[1]),backgroundColor:P.pink,borderRadius:4}]},
     options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
     scales:{x:{beginAtZero:true,ticks:{stepSize:1}},y:{ticks:{font:{size:11}}}}}});
 }
@@ -1303,6 +1462,30 @@ document.getElementById('tabs').addEventListener('click',e=>{
   document.getElementById(tab.dataset.p).classList.add('active');
   if(tab.dataset.p==='stats'){renderStatsCharts();renderLeaders();sweepStats();}
 });
+
+/* ---------- THEME TOGGLE (cycles Synthwave -> Lo-Fi -> Worn Tape) ---------- */
+(function(){
+  const btn=document.getElementById('themeToggle'); if(!btn)return;
+  const root=document.documentElement;
+  const CYCLE=[null,'vhs','vhs-max'];
+  const LABELS={'null':'Synthwave','vhs':'Lo-Fi','vhs-max':'Worn Tape'};
+  const lbl=btn.querySelector('.tt-lbl');
+  function sync(){
+    const cur=root.getAttribute('data-theme');
+    lbl.textContent=LABELS[cur===null?'null':cur]||'Synthwave';
+    btn.title='Theme: '+lbl.textContent+' — tap to cycle';
+  }
+  sync();
+  btn.addEventListener('click',()=>{
+    const cur=root.getAttribute('data-theme');
+    const next=CYCLE[(CYCLE.indexOf(cur)+1)%CYCLE.length];
+    if(next===null) root.removeAttribute('data-theme'); else root.setAttribute('data-theme',next);
+    try{ localStorage.setItem('wc-theme', next===null?'synthwave':next); }catch(e){}
+    sync();
+    applyChartTheme();
+    if(document.getElementById('stats').classList.contains('active')) renderStatsCharts();
+  });
+})();
 
 /* ---------- LIVE DATA (ESPN public scoreboard) ---------- */
 function normalize(s){return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');}
