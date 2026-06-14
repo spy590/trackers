@@ -17,6 +17,12 @@ Deploying is just `git push` — GitHub Pages redeploys automatically.
 1. Drop a self-contained `.html` file in the repo root.
 2. Push. Each tracker is shared via its own direct URL (there is no landing page / `index.html`).
 
+## Mirrored trackers
+
+Some trackers are copies of files authored in another project — to publish updates, re-copy from source and push:
+
+- `nam-training-101.html` ← `/Users/russellthatcher/ProjectsLocal/NamStudio/lessons/nam-training-101/index.html`
+
 ## Architecture
 
 Each tracker is a **single `.html` file** with all CSS, JS, and data inlined — no external files, no imports, no framework. Dependencies (e.g. Chart.js) are loaded from CDN with SRI integrity hashes.
