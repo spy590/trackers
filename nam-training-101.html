@@ -57,6 +57,8 @@
   h2 { font-size:27px; margin:6px 0 14px; letter-spacing:-.01em; }
   p { margin:0 0 16px; }
   .stage p { color:var(--c-text); }
+  .stage ul { margin:0 0 16px; padding-left:22px; color:var(--c-text); }
+  .stage li { margin:0 0 9px; }
   .muted { color:var(--c-text-muted); }
   code { font-family:var(--mono); font-size:.88em; background:var(--c-well); padding:2px 6px;
     border-radius:5px; border:1px solid var(--c-border); color:#FFD9B8; }
@@ -187,12 +189,47 @@
       response depends on what just happened (sag, transients, decay).</p>
     <p class="muted">The "knobs" are the network's <strong>weights</strong> — ~16k of them for the A2-Lite size,
       more for Full. Untrained, they're random and the output is noise. Training is the process of setting them.</p>
+    <p>So what <em>is</em> one of those knobs? <strong>Not a frequency</strong> — that's the natural guess, but
+      here's the surprise: a knob is just a plain <strong>number the model multiplies by</strong>. That's all a
+      "weight" is. Picture a recipe. To guess the next <em>wet</em> sample, the model takes a pinch of the newest
+      <em>dry</em> sample, a pinch of the one just before it, a pinch of the one before that, and so on — then adds
+      all the pinches together. Each "how big a pinch?" is one weight. A large weight means <em>"this sample
+      matters a lot right here"</em>; a near-zero weight means <em>"ignore this one."</em> Training is just the
+      hunt for the right pinch sizes.</p>
+    <p>That mixing step on its own is basically a tone control — it can brighten or darken, but it can't
+      <em>distort</em>. Three simple tricks turn a pile of these mixers into a real amp:</p>
+    <ul>
+      <li><strong>A "squash" step</strong> (the fancy word is <em>nonlinearity</em>) sits between layers and bends
+        the signal once it gets loud. <em>This</em> is where overdrive, compression, and sag come from — without
+        it, you'd forever have just an EQ, never a cranked amp.</li>
+      <li><strong>Stacking</strong> — a dozen-ish of these mix-then-squash steps in a row, each one chewing on the
+        output of the last, so the model can build up genuinely complex behavior.</li>
+      <li><strong>Reaching back in time</strong> (the <em>dilation</em> trick) — each layer is allowed to look
+        further back than the last: 1 sample, then 2, then 4, 8… So just a handful of small steps can "see" the
+        full ~6,000-sample window of recent history — without needing thousands of extra knobs to get there.</li>
+    </ul>
+    <p class="muted">(If you happen to know DSP: each layer is an FIR filter, the weights are its tap coefficients,
+      and the per-layer <code>+ b</code> is the bias — <code>y = w0·x[n] + w1·x[n-1] + … + b</code>. If that
+      sentence meant nothing to you, you can safely ignore it — the recipe picture above is the whole idea.)</p>
     <details class="ml">
       <summary><span class="tag">ML concept</span><span class="term">Parameters / weights &middot; the model <i>is</i> its numbers</span><span class="chev">›</span></summary>
       <div class="body"><span class="swe">A neural net is a fixed <b>architecture</b> (the wiring — chosen up front) plus a big vector of
         <b>weights</b> (the learnable numbers). The architecture is your code; the weights are the <i>config/state</i>
         the optimizer fills in. A trained <code>.nam</code> file is literally that weight vector serialized — nothing
         more mysterious than a saved settings blob.</span></div>
+    </details>
+    <details class="ml">
+      <summary><span class="tag">Going deeper</span><span class="term">Where the millions come from &middot; filters, channels, biases</span><span class="chev">›</span></summary>
+      <div class="body"><span class="swe"><b>Parameters = weights + biases</b> — "parameter," "weight," and "knob" all mean the same
+        learnable number here (a <b>bias</b> is the additive <code>+ b</code>). The count comes from <b>channels</b>:
+        each layer carries several parallel feature streams (A2-Lite is <code>channels_3</code> = 3 wide, Full is
+        <code>channels_8</code> = 8 wide), and every filter has one weight per <i>(input-channel × output-channel ×
+        tap)</i>. So one layer holds roughly <code>taps × in_channels × out_channels</code> weights; stack the
+        dilated layers and that's where ~16k (Lite) — far more for Full — comes from. Wider channels = more weights =
+        more <b>capacity</b> to fit a complex amp, at more compute (the size↔accuracy trade in Stage 6). None of
+        these are set by hand — training (Stage 4) is gradient descent finding good values for <i>all</i> of them at
+        once, starting from random. The amp's frequency response + feel is the <i>emergent</i> result of the whole
+        pile working together, not any single coefficient.</span></div>
     </details>
   </section>
 
