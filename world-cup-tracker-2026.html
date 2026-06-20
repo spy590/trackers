@@ -1117,10 +1117,8 @@ function renderTeams(){
 }
 
 /* ---------- BRACKET ---------- */
-const GROUP_MATCHES=6;  // a 4-team round-robin group plays 6 matches
 function groupFtCount(g){return MATCHES.filter(m=>TEAM_GROUP[m.h]===g&&matchState(m)==='ft').length;}
-function groupComplete(g){return groupFtCount(g)>=GROUP_MATCHES;}
-/* All 12 third-placed teams ranked head-to-head; the top 8 advance. */
+/* All 12 third-placed teams ranked head-to-head; the top 8 advance. (groupComplete defined below) */
 function thirdsRanking(){
   return Object.keys(GROUPS).map(g=>{const r=computeStandings(g)[2];return {...r,g};})
     .sort((a,b)=>b.Pts-a.Pts||b.GD-a.GD||b.GF-a.GF||a.t.localeCompare(b.t));
@@ -1387,8 +1385,7 @@ function teamStatus(team){
   // 3rd place: only "out" once every group is finished AND it ranks outside the best 8 thirds
   if(gDone&&pos===3){
     if(allGroupsComplete()){
-      const thirds=Object.keys(GROUPS).map(gg=>{const r=computeStandings(gg)[2];return r?{...r,g:gg}:null;}).filter(Boolean)
-        .sort((a,b)=>b.Pts-a.Pts||b.GD-a.GD||b.GF-a.GF||a.t.localeCompare(b.t));
+      const thirds=thirdsRanking();
       const rank=thirds.findIndex(r=>r.t===team)+1;
       if(rank>8) return {status:'out',note:'3rd in Group '+g+' · best-thirds #'+rank};
       return {status:'through',note:'3rd in Group '+g+' · best-thirds #'+rank};
