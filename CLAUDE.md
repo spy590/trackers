@@ -29,6 +29,10 @@ Each tracker is a **single `.html` file** with all CSS, JS, and data inlined —
 
 ### World Cup tracker (`world-cup-tracker-2026.html`)
 
+> **Deploy stamp:** the header card shows a `build YYYY.MM.DD·HHMMZ` label (the `.build` div under `.sub`). There is no build step, so **bump this string by hand (current UTC) on every deploy** — it's how a finished deploy is spotted on the live page.
+>
+> **Lifespan:** this tracker is only needed through the 2026 World Cup (final July 19, 2026); it can be retired afterward.
+
 Structure of the script section:
 
 - **DATA block** — plain JS constants: `FLAG` (emoji map), `GROUPS` (group→teams), `MATCHES` (array of match objects via `M()` factory), `VENUES`, `KO_DATES`, `COORDS`/`VENUE_GEO` (lat/lon for maps), `SQUADS` (12 detailed team rosters via `p()` factory).
