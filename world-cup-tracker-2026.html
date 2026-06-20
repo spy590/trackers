@@ -34,13 +34,13 @@
 /* ===== Lo-Fi VHS palette: synthwave seen through a worn tape (shared by both VHS modes) ===== */
 html[data-theme^="vhs"]{
   color-scheme: dark;
-  --bg:#1a1426; --card:#241a33; --ink:#e8ddd6; --muted:#9b8b9a;
-  --line:#473a52; --accent:#d16aa8; --accent2:#5fb6c4; --accent-soft:rgba(209,106,168,.12);
-  --gold:#d6b85f; --live:#d8585f; --chip:#332440;
-  --neon-pink:#d16aa8; --neon-cyan:#5fb6c4; --neon-purple:#9a73b8; --neon-orange:#d68a52;
+  --bg:#1a1426; --card:#241a33; --ink:#e8ddd6; --muted:#a594a4;
+  --line:#473a52; --accent:#e85ba6; --accent2:#42c4dc; --accent-soft:rgba(232,91,166,.14);
+  --gold:#ecc24c; --live:#ee4d5b; --chip:#332440;
+  --neon-pink:#e85ba6; --neon-cyan:#42c4dc; --neon-purple:#aa6fd4; --neon-orange:#ec9145;
   --shadow:0 2px 10px rgba(0,0,0,.5),0 0 0 1px rgba(154,115,184,.06);
-  --glow-pink:0 0 6px rgba(209,106,168,.35),0 0 14px rgba(209,106,168,.18);
-  --glow-cyan:0 0 6px rgba(95,182,196,.32),0 0 12px rgba(95,182,196,.16);
+  --glow-pink:0 0 6px rgba(232,91,166,.4),0 0 14px rgba(232,91,166,.2);
+  --glow-cyan:0 0 6px rgba(66,196,220,.36),0 0 12px rgba(66,196,220,.18);
 }
 html[data-theme^="vhs"] body{
   background-image:
@@ -317,14 +317,14 @@ html[data-theme^="vhs"] .vhs-track{display:block;position:fixed;inset:0;pointer-
    so position:fixed modals / sticky nav keep working. */
 html[data-theme^="vhs"] .vhs-grade{
   z-index:88;
-  -webkit-backdrop-filter:saturate(.62) contrast(.92) brightness(1.06) sepia(.18);
-  backdrop-filter:saturate(.62) contrast(.92) brightness(1.06) sepia(.18);
-  background:linear-gradient(0deg, rgba(60,40,30,.10), rgba(40,30,50,.06));
+  -webkit-backdrop-filter:saturate(.88) contrast(.95) brightness(1.05) sepia(.09);
+  backdrop-filter:saturate(.88) contrast(.95) brightness(1.05) sepia(.09);
+  background:linear-gradient(0deg, rgba(60,40,30,.07), rgba(40,30,50,.05));
 }
 html[data-theme="vhs-max"] .vhs-grade{
-  -webkit-backdrop-filter:saturate(.5) contrast(.88) brightness(1.08) sepia(.28);
-  backdrop-filter:saturate(.5) contrast(.88) brightness(1.08) sepia(.28);
-  background:linear-gradient(0deg, rgba(70,42,28,.14), rgba(44,30,52,.09));
+  -webkit-backdrop-filter:saturate(.74) contrast(.9) brightness(1.06) sepia(.16);
+  backdrop-filter:saturate(.74) contrast(.9) brightness(1.06) sepia(.16);
+  background:linear-gradient(0deg, rgba(70,42,28,.10), rgba(44,30,52,.07));
 }
 
 /* Scanlines */
@@ -1184,8 +1184,8 @@ const CHARTS={};
 const CHART_PALETTES={
   synthwave:{ text:'#c6a9f0', grid:'rgba(177,74,237,.18)', bar1:'#16e0ff', gold:'#ffd23f', pink:'#ff2bd6',
               neon:['#ff2bd6','#16e0ff','#b14aed','#ff7a18','#ffd23f','#39ff8b'], donutBorder:'#190a36' },
-  vhs:{ text:'#9b8b9a', grid:'rgba(154,115,184,.18)', bar1:'#5fb6c4', gold:'#d6b85f', pink:'#d16aa8',
-        neon:['#d16aa8','#5fb6c4','#9a73b8','#d68a52','#d6b85f','#6fae84'], donutBorder:'#241a33' }
+  vhs:{ text:'#b39db0', grid:'rgba(170,111,212,.2)', bar1:'#42c4dc', gold:'#ecc24c', pink:'#e85ba6',
+        neon:['#e85ba6','#42c4dc','#aa6fd4','#ec9145','#ecc24c','#5cbf86'], donutBorder:'#241a33' }
 };
 function chartPalette(){
   return String(document.documentElement.getAttribute('data-theme')||'').startsWith('vhs')
