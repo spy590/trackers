@@ -32,6 +32,8 @@ Each tracker is a **single `.html` file** with all CSS, JS, and data inlined —
 > **Deploy stamp:** the header card shows a `build YYYY.MM.DD·HHMMZ` label (the `.build` div under `.sub`). There is no build step, so **bump this string by hand (current UTC) on every deploy** — it's how a finished deploy is spotted on the live page.
 >
 > **Lifespan:** this tracker is only needed through the 2026 World Cup (final July 19, 2026); it can be retired afterward.
+>
+> **Install (PWA):** the header has an "Add to Home Screen" button. It depends on two sibling files at the repo root — `manifest.webmanifest` and `apple-touch-icon.png` — so this tracker is *not* fully self-contained. Android/Chromium fires the native install prompt; iOS Safari has no install API, so the button shows manual Share→"Add to Home Screen" steps.
 
 Structure of the script section:
 
