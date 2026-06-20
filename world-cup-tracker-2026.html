@@ -201,9 +201,17 @@ table.stand tr.q2 td:first-child{box-shadow:inset 3px 0 0 var(--gold);}
 .bracket{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;overflow-x:auto;}
 .bcol{min-width:150px;}
 .bcol h4{font-size:12px;text-align:center;color:var(--accent);margin:0 0 8px;text-transform:uppercase;letter-spacing:.4px;}
-.bmatch{border:1px solid var(--line);border-radius:9px;padding:7px 9px;margin-bottom:8px;background:var(--card);font-size:11.5px;}
-.bmatch .slot{color:var(--muted);padding:2px 0;}
+.bmatch{position:relative;border:1px solid var(--line);border-radius:9px;padding:7px 9px;margin-bottom:8px;background:var(--card);font-size:11.5px;}
+.bmatch .mno{position:absolute;top:5px;right:7px;font-size:9px;color:var(--muted);opacity:.6;font-weight:700;}
+.bmatch .slot{color:var(--muted);padding:2px 16px 2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bmatch .slot.filled{color:var(--ink);font-weight:600;}
+.bmatch .slot.conf{color:var(--accent);}
+.bmatch .slot.third{font-style:italic;opacity:.8;}
+.bmatch .slot.win{opacity:.7;}
 .bmatch .dt{font-size:9.5px;color:var(--accent2);font-weight:700;margin-top:3px;}
+.prov{color:var(--gold);font-weight:700;}
+table.stand tr.out td{opacity:.5;}
+.lcap{margin-top:5px;font-size:10.5px;font-style:italic;opacity:.8;color:var(--muted);}
 /* venues / stats */
 .venue-list{columns:2;column-gap:24px;font-size:12.5px;}
 .venue-list .v{break-inside:avoid;padding:4px 0;border-bottom:1px dashed var(--line);}
@@ -473,9 +481,14 @@ html[data-theme="vhs-max"] .dh{text-shadow:-.7px 0 0 rgba(255,0,80,.4), .8px 0 0
   <section class="panel" id="bracket">
     <div class="card">
       <h3>Knockout stage</h3>
-      <div class="hint">Round of 32 → Round of 16 → Quarterfinals → Semifinals → Final. Matchups are filled once group placings are decided.</div>
+      <div class="hint">Round of 32 → Round of 16 → Quarterfinals → Semifinals → Final. Group winners and runners-up drop into their fixed bracket slots — shown live as standings firm up (a <span class="prov">·</span> marks a slot the group hasn't yet clinched). Third-place and later-round slots fill in once results land.</div>
     </div>
     <div class="card"><div class="bracket" id="bracketBox"></div></div>
+    <div class="card">
+      <h3>Best third-placed teams</h3>
+      <div class="hint" style="margin-bottom:8px">The 8 best of the 12 third-placed teams advance to the Round of 32. Ranked by points, then goal difference, then goals for.</div>
+      <div id="thirdsBox"></div>
+    </div>
     <div class="card">
       <h3>Key knockout dates</h3>
       <div id="koDates" class="hint"></div>
@@ -719,6 +732,48 @@ const KO_DATES=[
  ["Round of 32","June 28 – July 3"],["Round of 16","July 4 – 7"],
  ["Quarterfinals","July 9 – 11"],["Semifinals","July 14 – 15"],
  ["Bronze medal match","July 18 — Miami Stadium"],["Final","July 19 — New York New Jersey Stadium, 3pm ET"]
+];
+/* Official 2026 knockout bracket structure, locked at the Final Draw.
+   Slot tokens: {w:'A'} group winner · {r:'A'} runner-up · {t:[...]} best third from the listed groups · {m:73} winner of match 73 */
+const W=n=>({m:n}), G1=g=>({w:g}), G2=g=>({r:g}), T3=(...g)=>({t:g});
+const KB=(n,round,a,b,venue)=>({n,round,a,b,venue:venue||''});
+const KO_BRACKET=[
+ /* Round of 32 (28 Jun – 3 Jul) */
+ KB(73,'R32',G2('A'),G2('B')),
+ KB(74,'R32',G1('E'),T3('A','B','C','D','F')),
+ KB(75,'R32',G1('F'),G2('C')),
+ KB(76,'R32',G1('C'),G2('F')),
+ KB(77,'R32',G1('I'),T3('C','D','F','G','H')),
+ KB(78,'R32',G2('E'),G2('I')),
+ KB(79,'R32',G1('A'),T3('C','E','F','H','I')),
+ KB(80,'R32',G1('L'),T3('E','H','I','J','K'),'Atlanta Stadium'),
+ KB(81,'R32',G1('D'),T3('B','E','F','I','J')),
+ KB(82,'R32',G1('G'),T3('A','E','H','I','J')),
+ KB(83,'R32',G2('K'),G2('L')),
+ KB(84,'R32',G1('H'),G2('J')),
+ KB(85,'R32',G1('B'),T3('E','F','G','I','J'),'BC Place'),
+ KB(86,'R32',G1('J'),G2('H'),'Miami Stadium'),
+ KB(87,'R32',G1('K'),T3('D','E','I','J','L'),'Kansas City Stadium'),
+ KB(88,'R32',G2('D'),G2('G'),'Dallas Stadium'),
+ /* Round of 16 (4 – 7 Jul) */
+ KB(89,'R16',W(74),W(77),'Philadelphia Stadium'),
+ KB(90,'R16',W(73),W(75),'Houston Stadium'),
+ KB(91,'R16',W(76),W(78),'New York New Jersey Stadium'),
+ KB(92,'R16',W(79),W(80),'Mexico City Stadium'),
+ KB(93,'R16',W(83),W(84),'Dallas Stadium'),
+ KB(94,'R16',W(81),W(82),'Seattle Stadium'),
+ KB(95,'R16',W(86),W(88),'Atlanta Stadium'),
+ KB(96,'R16',W(85),W(87),'BC Place'),
+ /* Quarterfinals (9 – 11 Jul) */
+ KB(97,'QF',W(89),W(90),'Boston Stadium'),
+ KB(98,'QF',W(93),W(94),'Los Angeles Stadium'),
+ KB(99,'QF',W(91),W(92),'Miami Stadium'),
+ KB(100,'QF',W(95),W(96),'Kansas City Stadium'),
+ /* Semifinals (14 – 15 Jul) */
+ KB(101,'SF',W(97),W(98),'Dallas Stadium'),
+ KB(102,'SF',W(99),W(100),'Atlanta Stadium'),
+ /* Final (19 Jul) */
+ KB(104,'F',W(101),W(102),'New York New Jersey Stadium')
 ];
 
 /* Team home base — [lat, lon, place] (capital / representative city) */
@@ -1062,16 +1117,59 @@ function renderTeams(){
 }
 
 /* ---------- BRACKET ---------- */
+const GROUP_MATCHES=6;  // a 4-team round-robin group plays 6 matches
+function groupFtCount(g){return MATCHES.filter(m=>TEAM_GROUP[m.h]===g&&matchState(m)==='ft').length;}
+function groupComplete(g){return groupFtCount(g)>=GROUP_MATCHES;}
+/* All 12 third-placed teams ranked head-to-head; the top 8 advance. */
+function thirdsRanking(){
+  return Object.keys(GROUPS).map(g=>{const r=computeStandings(g)[2];return {...r,g};})
+    .sort((a,b)=>b.Pts-a.Pts||b.GD-a.GD||b.GF-a.GF||a.t.localeCompare(b.t));
+}
+/* Resolve a bracket slot token to a team (when known) or a placeholder label. */
+function resolveSlot(slot){
+  if(slot.w!=null||slot.r!=null){
+    const g=slot.w!=null?slot.w:slot.r, pos=slot.w!=null?0:1;
+    if(groupFtCount(g)>0) return {team:computeStandings(g)[pos].t, confirmed:groupComplete(g)};
+    return {team:null, confirmed:false, label:(slot.w!=null?'1':'2')+g};
+  }
+  if(slot.t) return {team:null, confirmed:false, label:'3rd · '+slot.t.join('/'), kind:'third'};
+  if(slot.m!=null) return {team:null, confirmed:false, label:'Winner #'+slot.m, kind:'win'};
+  return {team:null, confirmed:false, label:'TBD'};
+}
+function slotHtml(slot){
+  const r=resolveSlot(slot);
+  if(r.team){
+    const prov=r.confirmed?'':'<span class="prov" title="Current standing — group not yet clinched"> ·</span>';
+    return `<div class="slot filled${r.confirmed?' conf':''}"><span class="tlink" data-team="${esc(r.team)}">${crest(r.team,'crest-sm')} ${esc(r.team)}</span>${prov}</div>`;
+  }
+  return `<div class="slot ${r.kind==='third'?'third':r.kind==='win'?'win':''}">${esc(r.label)}</div>`;
+}
 function renderBracket(){
-  const cols=[["Round of 32",16],["Round of 16",8],["Quarterfinals",4],["Semifinals",2],["Final",1]];
+  const rounds=[['R32','Round of 32'],['R16','Round of 16'],['QF','Quarterfinals'],['SF','Semifinals'],['F','Final']];
   const box=document.getElementById('bracketBox'); box.innerHTML='';
-  cols.forEach(([name,n])=>{
+  rounds.forEach(([code,name])=>{
     const c=document.createElement('div'); c.className='bcol';
     let h=`<h4>${name}</h4>`;
-    for(let i=0;i<n;i++) h+=`<div class="bmatch"><div class="slot">TBD</div><div class="slot">TBD</div></div>`;
+    KO_BRACKET.filter(x=>x.round===code).forEach(x=>{
+      h+=`<div class="bmatch"><div class="mno">#${x.n}</div>${slotHtml(x.a)}${slotHtml(x.b)}${x.venue?`<div class="dt">${esc(x.venue)}</div>`:''}</div>`;
+    });
     c.innerHTML=h; box.appendChild(c);
   });
+  renderThirds();
   document.getElementById('koDates').innerHTML=KO_DATES.map(([a,b])=>`<div style="padding:3px 0;border-bottom:1px dashed var(--line)"><b style="color:var(--ink)">${a}</b> — ${b}</div>`).join('');
+}
+function renderThirds(){
+  const el=document.getElementById('thirdsBox'); if(!el)return;
+  if(!Object.keys(GROUPS).some(g=>groupFtCount(g)>0)){
+    el.className='hint';
+    el.textContent='Third-place standings appear once group matches start finishing.';
+    return;
+  }
+  const arr=thirdsRanking(), allDone=Object.keys(GROUPS).every(groupComplete);
+  el.className='';
+  el.innerHTML=`<table class="stand"><thead><tr><th class="team">3rd place</th><th>Grp</th><th>P</th><th>GD</th><th>GF</th><th>Pts</th></tr></thead><tbody>`
+    +arr.map((r,i)=>`<tr class="${i<8?'q1':'out'}"><td class="team"><span class="tlink" data-team="${esc(r.t)}">${crest(r.t,'crest-sm')} ${esc(r.t)}</span></td><td>${r.g}</td><td>${r.P}</td><td>${r.GD>0?'+':''}${r.GD}</td><td>${r.GF}</td><td class="pts">${r.Pts}</td></tr>`).join('')
+    +`</tbody></table><div class="lcap">Top 8 (highlighted) advance.${allDone?'':' Provisional — final once all 12 groups finish.'}</div>`;
 }
 
 /* ---------- STATS ---------- */
@@ -1707,7 +1805,7 @@ function renderLiveNow(){
   html+=`</div>`;
   box.innerHTML=html;
 }
-function renderAll(){renderLiveNow();renderSchedule();renderGroups();renderStatus();renderScorers();renderLeaders();if(document.getElementById('stats').classList.contains('active'))renderStatsCharts();if(currentView==='team'&&currentTeam&&ovBack.classList.contains('open'))openTeam(currentTeam,true);if(currentMatchIdx!=null&&matchBack.classList.contains('open')){const m=MATCHES[currentMatchIdx];if(m&&matchState(m)==='live')paintMatch(m,'live');}}
+function renderAll(){renderLiveNow();renderSchedule();renderGroups();renderBracket();renderStatus();renderScorers();renderLeaders();if(document.getElementById('stats').classList.contains('active'))renderStatsCharts();if(currentView==='team'&&currentTeam&&ovBack.classList.contains('open'))openTeam(currentTeam,true);if(currentMatchIdx!=null&&matchBack.classList.contains('open')){const m=MATCHES[currentMatchIdx];if(m&&matchState(m)==='live')paintMatch(m,'live');}}
 async function poll(days){
   try{
     const lists=await Promise.all(days.map(d=>fetchDay(d).catch(()=>null)));
@@ -1734,7 +1832,7 @@ renderBracket();
 renderVenues();
 renderStatus();
 renderScorers();
-setInterval(()=>{renderStatus();renderSchedule();renderGroups();},60000);  // local clock fallback when API is unavailable
+setInterval(()=>{renderStatus();renderSchedule();renderGroups();renderBracket();},60000);  // local clock fallback when API is unavailable
 startLive();
 </script>
 </body>
