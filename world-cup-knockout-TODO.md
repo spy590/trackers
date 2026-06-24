@@ -19,15 +19,21 @@ Before this work the tab rendered a static grid of "TBD" slots and did nothing.
 - Wired `renderBracket()` into `renderAll()` (30s live poll) and the 60s clock
   fallback so the bracket updates as results come in.
 
-## TODO — CHECK IN AFTER THE GROUP STAGE ENDS (group stage runs to **Sat 27 Jun 2026**; R32 starts **Sun 28 Jun**)
+## DONE (2)
 
-1. **Third-place → R32 slot assignment.** Third-place slots currently render as a
-   label (`3rd · A/B/C/D/F`), not a resolved team. FIFA assigns the 8 qualifying
-   thirds to specific winners via a fixed lookup table keyed on *which 8 of the 12
-   groups* the thirds come from. That table is not yet in the code. Once the group
-   stage is complete:
-   - Add the FIFA third-place assignment lookup table (12-choose-8 → slot map).
-   - Resolve `{t:[…]}` slots in `resolveSlot()` using it + `thirdsRanking()`.
+1. **Third-place → R32 slot assignment.** ✅ Implemented (24 Jun). `THIRD_FIXTURES`
+   encodes each of the 8 third-place fixtures' fixed 5-group eligibility pool;
+   `thirdAllocation()` assigns the best-ranked available third to each fixture in
+   match-number order (FIFA Annex C method), with backtracking as a safety net.
+   Verified to produce a complete valid bijection for all C(12,8)=495 group
+   combinations. `resolveSlot()` fills `{t:[…]}` slots once all 12 groups finish;
+   seeded teams are marked ◇ in the bracket.
+   - **VERIFY ON 28 JUN:** once FIFA publishes the actual R32 draw, confirm our
+     allocator output matches the official third-place matchups. The greedy/
+     match-order method is the widely-documented one, but cross-check against the
+     official bracket and correct `thirdAllocation()` if any combination diverges.
+
+## TODO — CHECK IN ON **Sun 28 Jun 2026** (R32 starts; group stage ends Sat 27 Jun)
 
 2. **Live knockout results / advancement.** `MATCHES` only contains group-stage
    fixtures, so `{m:NN}` (winner-of-match) slots render as `Winner #NN` and never

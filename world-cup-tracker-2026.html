@@ -246,6 +246,7 @@ table.stand tr.q2 td:first-child{box-shadow:inset 3px 0 0 var(--gold);}
 .bmatch .slot.win{opacity:.7;}
 .bmatch .dt{font-size:9.5px;color:var(--accent2);font-weight:700;margin-top:3px;}
 .prov{color:var(--gold);font-weight:700;}
+.proj{color:var(--accent2);font-weight:700;font-size:10px;}
 table.stand tr.out td{opacity:.5;}
 .lcap{margin-top:5px;font-size:10.5px;font-style:italic;opacity:.8;color:var(--muted);}
 /* venues / stats */
@@ -475,7 +476,7 @@ html[data-theme="vhs-max"] .dh{text-shadow:-.7px 0 0 rgba(255,0,80,.4), .8px 0 0
     <div>
       <h1>FIFA WORLD CUP 2026 ⚡ LIVE TRACKER</h1>
       <div class="sub">Canada · Mexico · United States — 48 teams · 104 matches</div>
-      <div class="build" title="Build / deploy stamp">build 2026.06.20·1725Z</div>
+      <div class="build" title="Build / deploy stamp">build 2026.06.24·2346Z</div>
     </div>
     <div class="spacer"></div>
     <button id="installBtn" class="install-btn" type="button" hidden aria-haspopup="dialog"><span class="ib-ico">📲</span><span class="ib-lbl">Add to Home Screen</span></button>
@@ -548,7 +549,7 @@ html[data-theme="vhs-max"] .dh{text-shadow:-.7px 0 0 rgba(255,0,80,.4), .8px 0 0
   <section class="panel" id="bracket">
     <div class="card">
       <h3>Knockout stage</h3>
-      <div class="hint">Round of 32 → Round of 16 → Quarterfinals → Semifinals → Final. Group winners and runners-up drop into their fixed bracket slots — shown live as standings firm up (a <span class="prov">·</span> marks a slot the group hasn't yet clinched). Third-place and later-round slots fill in once results land.</div>
+      <div class="hint">Round of 32 → Round of 16 → Quarterfinals → Semifinals → Final. Group winners and runners-up drop into their fixed bracket slots — shown live as standings firm up (a <span class="prov">·</span> marks a slot the group hasn't yet clinched). Once all 12 groups finish, the eight best third-placed teams are seeded into their fixtures via FIFA's allocation method (marked <span class="proj">◇</span>). Later-round slots fill in as knockout results land.</div>
     </div>
     <div class="card"><div class="bracket" id="bracketBox"></div></div>
     <div class="card">
@@ -1190,6 +1191,38 @@ function thirdsRanking(){
   return Object.keys(GROUPS).map(g=>{const r=computeStandings(g)[2];return {...r,g};})
     .sort((a,b)=>b.Pts-a.Pts||b.GD-a.GD||b.GF-a.GF||a.t.localeCompare(b.t));
 }
+/* Third-place → Round of 32 allocation (FIFA Annex C method).
+   Each of the 8 third-place fixtures has a fixed pool of 5 eligible groups; the
+   best-ranked available third is assigned to each fixture in match-number order.
+   Pools below mirror the T3(...) tokens in KO_BRACKET. Backtracking guarantees a
+   complete valid assignment if the plain greedy ever hits a dead end. */
+const THIRD_FIXTURES=[
+  {n:74, pool:['A','B','C','D','F']},
+  {n:77, pool:['C','D','F','G','H']},
+  {n:79, pool:['C','E','F','H','I']},
+  {n:80, pool:['E','H','I','J','K']},
+  {n:81, pool:['B','E','F','I','J']},
+  {n:82, pool:['A','E','H','I','J']},
+  {n:85, pool:['E','F','G','I','J']},
+  {n:87, pool:['D','E','I','J','L']}
+];
+let KO_THIRD_ASSIGN={};   // poolKey ("ABCDF") -> team, set in renderBracket once all groups are done
+function thirdAllocation(){
+  const ranked=thirdsRanking().slice(0,8).map(r=>({team:r.t,g:r.g}));   // best -> worst
+  const res={}, used=new Set();
+  (function solve(i){
+    if(i===THIRD_FIXTURES.length) return true;
+    const fx=THIRD_FIXTURES[i], key=fx.pool.join('');
+    for(const a of ranked){                       // try best-ranked eligible first
+      if(used.has(a.team)||!fx.pool.includes(a.g)) continue;
+      used.add(a.team); res[key]=a.team;
+      if(solve(i+1)) return true;
+      used.delete(a.team); delete res[key];
+    }
+    return false;
+  })(0);
+  return res;
+}
 /* Resolve a bracket slot token to a team (when known) or a placeholder label. */
 function resolveSlot(slot){
   if(slot.w!=null||slot.r!=null){
@@ -1197,7 +1230,11 @@ function resolveSlot(slot){
     if(groupFtCount(g)>0) return {team:computeStandings(g)[pos].t, confirmed:groupComplete(g)};
     return {team:null, confirmed:false, label:(slot.w!=null?'1':'2')+g};
   }
-  if(slot.t) return {team:null, confirmed:false, label:'3rd · '+slot.t.join('/'), kind:'third'};
+  if(slot.t){
+    const team=KO_THIRD_ASSIGN[slot.t.join('')];
+    if(team) return {team, confirmed:true, projected:true};
+    return {team:null, confirmed:false, label:'3rd · '+slot.t.join('/'), kind:'third'};
+  }
   if(slot.m!=null) return {team:null, confirmed:false, label:'Winner #'+slot.m, kind:'win'};
   return {team:null, confirmed:false, label:'TBD'};
 }
@@ -1205,11 +1242,13 @@ function slotHtml(slot){
   const r=resolveSlot(slot);
   if(r.team){
     const prov=r.confirmed?'':'<span class="prov" title="Current standing — group not yet clinched"> ·</span>';
-    return `<div class="slot filled${r.confirmed?' conf':''}"><span class="tlink" data-team="${esc(r.team)}">${crest(r.team,'crest-sm')} ${esc(r.team)}</span>${prov}</div>`;
+    const mark=r.projected?'<span class="proj" title="Seeded via FIFA\'s third-place allocation method"> ◇</span>':'';
+    return `<div class="slot filled${r.confirmed?' conf':''}"><span class="tlink" data-team="${esc(r.team)}">${crest(r.team,'crest-sm')} ${esc(r.team)}</span>${prov}${mark}</div>`;
   }
   return `<div class="slot ${r.kind==='third'?'third':r.kind==='win'?'win':''}">${esc(r.label)}</div>`;
 }
 function renderBracket(){
+  KO_THIRD_ASSIGN = Object.keys(GROUPS).every(groupComplete) ? thirdAllocation() : {};
   const rounds=[['R32','Round of 32'],['R16','Round of 16'],['QF','Quarterfinals'],['SF','Semifinals'],['F','Final']];
   const box=document.getElementById('bracketBox'); box.innerHTML='';
   rounds.forEach(([code,name])=>{
