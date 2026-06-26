@@ -45,6 +45,20 @@ Before this work the tab rendered a static grid of "TBD" slots and did nothing.
      ESPN exposes shootout detail; group-stage code currently skips shootout
      scoring plays, so KO winner logic needs its own path).
 
+   **ESPN `fifa.world` knockout format notes (researched 24 Jun — VERIFY against
+   the first real R32 payload before trusting):**
+   - Same envelope as group stage: `events[] → competitions[0] → competitors[]`,
+     `status.type.state` = `pre`/`in`/`post`. `fetchDay` + team matching reuse as-is.
+   - **Winner ≠ score comparison.** `competitors[].score` is the regulation/ET
+     score (a shootout shows as e.g. `1–1`), so comparing `hs`/`as` calls it a
+     draw. Read the per-competitor **`winner: true`** boolean as the authoritative
+     advancement signal (correct for 90', AET, and penalties).
+   - **`competitors[].shootoutScore`** holds the penalty tally (e.g. 4 vs 2) — capture
+     it to show "1–1 (4–2 pens)".
+   - `status.type.description`/`detail` carry "After Extra Time" / "After Penalties";
+     `displayClock` runs to 90–120'. `matchState` (in→live, post→ft) still holds;
+     add an "AET/Pens" badge variant instead of plain "FT".
+
 3. **Verify the bracket template against the live draw** once real teams populate
    it — sanity-check that group winners/runners-up land in the venues/dates FIFA
    actually scheduled (a few R32 venues are still unset in `KO_BRACKET`).
