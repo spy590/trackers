@@ -200,6 +200,8 @@ select,input[type=text]{padding:7px 10px;border:1px solid var(--line);border-rad
 .b-live{background:var(--live);color:#fff;}
 .b-ft{background:var(--chip);color:var(--muted);}
 .b-grp{background:var(--accent-soft);color:var(--accent);}
+.b-ko{background:rgba(22,224,255,.13);color:var(--accent2);}
+.m-pens{font-size:10px;color:var(--muted);font-weight:700;}
 .gchip{font-size:10px;color:var(--muted);}
 /* groups */
 .groups-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
@@ -244,6 +246,11 @@ table.stand tr.q2 td:first-child{box-shadow:inset 3px 0 0 var(--gold);}
 .bmatch .slot.conf{color:var(--accent);}
 .bmatch .slot.third{font-style:italic;opacity:.8;}
 .bmatch .slot.win{opacity:.7;}
+.bmatch .slot.won{color:var(--accent);font-weight:800;}
+.bmatch .slot.won::after{content:" ✓";color:var(--accent2);font-size:10px;}
+.bmatch .bscore{text-align:center;font-size:11px;font-weight:800;color:var(--ink);margin-top:3px;letter-spacing:.3px;}
+.bmatch .bscore.live{color:var(--live);}
+.bmatch .bscore .bp{font-size:9px;color:var(--muted);font-weight:700;}
 .bmatch .dt{font-size:9.5px;color:var(--accent2);font-weight:700;margin-top:3px;}
 .prov{color:var(--gold);font-weight:700;}
 .proj{color:var(--accent2);font-weight:700;font-size:10px;}
@@ -476,7 +483,7 @@ html[data-theme="vhs-max"] .dh{text-shadow:-.7px 0 0 rgba(255,0,80,.4), .8px 0 0
     <div>
       <h1>FIFA WORLD CUP 2026 ⚡ LIVE TRACKER</h1>
       <div class="sub">Canada · Mexico · United States — 48 teams · 104 matches</div>
-      <div class="build" title="Build / deploy stamp">build 2026.06.24·2346Z</div>
+      <div class="build" title="Build / deploy stamp">build 2026.06.28·1218Z</div>
     </div>
     <div class="spacer"></div>
     <button id="installBtn" class="install-btn" type="button" hidden aria-haspopup="dialog"><span class="ib-ico">📲</span><span class="ib-lbl">Add to Home Screen</span></button>
@@ -1099,39 +1106,54 @@ function renderSchedule(){
   const up=document.getElementById('fUpcoming').checked;
   const body=document.getElementById('scheduleBody'); body.innerHTML='';
   let days={}, labels={}, order=[], shown=0;
+  function bucket(m){const key=localDayKey(m.gmt);if(!days[key]){days[key]=[];labels[key]=localDayLabel(m.gmt);order.push(key);}return key;}
   MATCHES.forEach(m=>{
     const grp=TEAM_GROUP[m.h];
     if(g&&grp!==g) return;
     if(t&&m.h!==t&&m.a!==t) return;
     const st=matchState(m);
     if(up&&(st!=='upcoming')) return;
-    const key=localDayKey(m.gmt);
-    if(!days[key]){days[key]=[];labels[key]=localDayLabel(m.gmt);order.push(key);}
-    days[key].push({m,st,grp}); shown++;
+    days[bucket(m)].push({m,st,grp}); shown++;
   });
+  if(!g){                                          // KO games have no group — hidden when a group filter is set
+    koScheduleMatches().forEach(m=>{
+      if(t&&m.h!==t&&m.a!==t) return;
+      const st=matchState(m);
+      if(up&&(st!=='upcoming')) return;
+      days[bucket(m)].push({m,st,ko:true}); shown++;
+    });
+  }
   order.sort();
   order.forEach(d=>{
     const dg=document.createElement('div'); dg.className='daygroup';
     days[d].sort((x,y)=>new Date(x.m.gmt)-new Date(y.m.gmt));
     dg.innerHTML=`<div class="dh"><span>${labels[d]}</span><span class="gchip">${days[d].length} match${days[d].length>1?'es':''}</span></div>`;
-    days[d].forEach(({m,st,grp})=>{
+    days[d].forEach(({m,st,grp,ko})=>{
       let center;
-      if(st==='ft') center=`<div class="m-score">${m.hs}–${m.as}</div><div><span class="badge b-ft">FT</span></div>`;
+      const pens=(m.psH!=null)?` <span class="m-pens">(${m.psH}–${m.psA} pens)</span>`:'';
+      if(st==='ft') center=`<div class="m-score">${m.hs}–${m.as}${pens}</div><div><span class="badge b-ft">${ko?koFtLabel(m):'FT'}</span></div>`;
       else if(st==='live') center=`<div class="m-score">${m.hs??0}–${m.as??0}</div><div><span class="badge b-live">● Live</span>${m.clock?` <span class="m-clock">${esc(m.clock)}</span>`:''}</div>`;
       else center=`<div class="m-vs">v</div><div class="m-time">${localTime(m.gmt)}</div>`;
       const el=document.createElement('div');
       el.className='match'+(isToday(m)?' today':'');
-      el.dataset.match=MATCHES.indexOf(m);
+      if(!ko) el.dataset.match=MATCHES.indexOf(m);
+      const venue = ko
+        ? `<div class="m-venue">${esc(m.v||'Venue TBD')}${m.c?', '+esc(m.c):''}</div>`
+        : `<div class="m-venue"><span class="vlink" data-venue="${esc(m.v)}">${esc(m.v)}</span>, <span class="vlink" data-venue="${esc(m.v)}">${esc(m.c)}</span></div>`;
+      const badge = ko
+        ? `<span class="badge b-ko">${esc(KO_ROUND_LABEL[m.round]||'Knockout')}${m.mno?' · #'+m.mno:''}</span>`
+        : `<span class="badge b-grp">Group ${grp}</span>`;
       el.innerHTML=`
         <div class="m-home">${tspan(m.h,'r')}</div>
-        <div class="m-center">${center}<div class="m-venue"><span class="vlink" data-venue="${esc(m.v)}">${esc(m.v)}</span>, <span class="vlink" data-venue="${esc(m.v)}">${esc(m.c)}</span></div></div>
+        <div class="m-center">${center}${venue}</div>
         <div class="m-away">${tspan(m.a,'l')}</div>
-        <div style="grid-column:1/-1;text-align:center;margin-top:2px"><span class="badge b-grp">Group ${grp}</span></div>`;
+        <div style="grid-column:1/-1;text-align:center;margin-top:2px">${badge}</div>`;
       dg.appendChild(el);
     });
     body.appendChild(dg);
   });
-  document.getElementById('schedCount').textContent=shown+' of '+MATCHES.length+' matches'+(TZABBR?' · times in '+TZABBR:'');
+  const total=MATCHES.length+Object.keys(KO_LIVE).length;
+  document.getElementById('schedCount').textContent=shown+' of '+total+' matches'+(TZABBR?' · times in '+TZABBR:'');
 }
 function isToday(m){const k=new Date(m.gmt),n=NOW();return k.toDateString()===n.toDateString();}
 
@@ -1235,15 +1257,20 @@ function resolveSlot(slot){
     if(team) return {team, confirmed:true, projected:true};
     return {team:null, confirmed:false, label:'3rd · '+slot.t.join('/'), kind:'third'};
   }
-  if(slot.m!=null) return {team:null, confirmed:false, label:'Winner #'+slot.m, kind:'win'};
+  if(slot.m!=null){
+    const team=KO_RESULT[slot.m];
+    if(team) return {team, confirmed:true};
+    return {team:null, confirmed:false, label:'Winner #'+slot.m, kind:'win'};
+  }
   return {team:null, confirmed:false, label:'TBD'};
 }
-function slotHtml(slot){
+function slotHtml(slot,winTeam){
   const r=resolveSlot(slot);
   if(r.team){
     const prov=r.confirmed?'':'<span class="prov" title="Current standing — group not yet clinched"> ·</span>';
     const mark=r.projected?'<span class="proj" title="Seeded via FIFA\'s third-place allocation method"> ◇</span>':'';
-    return `<div class="slot filled${r.confirmed?' conf':''}"><span class="tlink" data-team="${esc(r.team)}">${crest(r.team,'crest-sm')} ${esc(r.team)}</span>${prov}${mark}</div>`;
+    const won=winTeam&&r.team===winTeam?' won':'';
+    return `<div class="slot filled${r.confirmed?' conf':''}${won}"><span class="tlink" data-team="${esc(r.team)}">${crest(r.team,'crest-sm')} ${esc(r.team)}</span>${prov}${mark}</div>`;
   }
   return `<div class="slot ${r.kind==='third'?'third':r.kind==='win'?'win':''}">${esc(r.label)}</div>`;
 }
@@ -1255,7 +1282,15 @@ function renderBracket(){
     const c=document.createElement('div'); c.className='bcol';
     let h=`<h4>${name}</h4>`;
     KO_BRACKET.filter(x=>x.round===code).forEach(x=>{
-      h+=`<div class="bmatch"><div class="mno">#${x.n}</div>${slotHtml(x.a)}${slotHtml(x.b)}${x.venue?`<div class="dt">${esc(x.venue)}</div>`:''}</div>`;
+      const ko=koGameFor(x);
+      const win=ko&&ko.winner;
+      let score='';
+      if(ko&&(ko.espnState==='post'||ko.espnState==='in')){
+        const pens=ko.psH!=null?` <span class="bp">(${ko.psH}–${ko.psA}p)</span>`:'';
+        const live=ko.espnState==='in';
+        score=`<div class="bscore${live?' live':''}">${ko.hs??0}–${ko.as??0}${pens}${live?' ●':''}</div>`;
+      }
+      h+=`<div class="bmatch"><div class="mno">#${x.n}</div>${slotHtml(x.a,win)}${slotHtml(x.b,win)}${score}${x.venue?`<div class="dt">${esc(x.venue)}</div>`:''}</div>`;
     });
     c.innerHTML=h; box.appendChild(c);
   });
@@ -1735,11 +1770,16 @@ const ALIAS={unitedstates:"USA",usmnt:"USA",turkey:"Turkiye",turkiye:"Turkiye",c
 function resolveTeam(n){const k=normalize(n);return CANON_NORM[k]||ALIAS[k]||null;}
 const FIX_BY_PAIR={};MATCHES.forEach((m,i)=>{FIX_BY_PAIR[[m.h,m.a].sort().join('|')]=i;});
 const ESPN_EVENTS={};let ESPN_SCORERS={};let ESPN_PENS={};let lastOk=null;
+let KO_LIVE={};     // pairKey "TeamA|TeamB"(sorted) -> knockout match object from ESPN
+let KO_RESULT={};   // KO_BRACKET match number -> winning team (once decided)
 /* aggregated from per-match summaries (assists/saves/cards) */
 const MATCH_STATS={};let ESPN_ASSISTS={},ESPN_SAVES={},ESPN_CARDS={};
 let sweepState={done:0,total:0,running:false};
 function ymd(d){return ''+d.getUTCFullYear()+String(d.getUTCMonth()+1).padStart(2,'0')+String(d.getUTCDate()).padStart(2,'0');}
-const ALL_DAYS=(()=>{const a=[];for(let i=11;i<=27;i++)a.push('202606'+String(i).padStart(2,'0'));return a;})();
+const ALL_DAYS=(()=>{const a=[];
+  for(let i=11;i<=30;i++)a.push('202606'+String(i).padStart(2,'0'));   // group stage + first KO days
+  for(let i=1;i<=19;i++)a.push('202607'+String(i).padStart(2,'0'));    // through the final (Jul 19)
+  return a;})();
 function currentWindow(){const now=NOW(),a=[];for(let o=-1;o<=1;o++)a.push(ymd(new Date(now.getTime()+o*864e5)));return a;}
 async function fetchDay(d){const u='https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates='+d;const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw new Error('http'+r.status);const j=await r.json();return j.events||[];}
 function applyEvent(ev){
@@ -1750,7 +1790,9 @@ function applyEvent(ev){
     const t1=resolveTeam(cs[1].team&&(cs[1].team.displayName||cs[1].team.name));
     if(!t0||!t1)return;
     const idx=FIX_BY_PAIR[[t0,t1].sort().join('|')];if(idx==null)return;
-    const m=MATCHES[idx];const st=comp.status&&comp.status.type&&comp.status.type.state;
+    const m=MATCHES[idx];
+    if(ev.date&&Math.abs(new Date(ev.date)-new Date(m.gmt))>3*864e5) return;  // same pairing in a later KO round — not this group fixture
+    const st=comp.status&&comp.status.type&&comp.status.type.state;
     m.espnState=st;m.eventId=ev.id;
     m.clock=(st==='in')?((comp.status&&comp.status.displayClock)||''):'';
     if(st==='in'||st==='post'){
@@ -1767,11 +1809,93 @@ function applyEvent(ev){
     });
   }catch(e){}
 }
+/* ---- KNOCKOUT live data (ESPN-driven) ----
+   The fifa.world feed returns KO games with real teams/score/venue/winner once
+   scheduled. Any fetched event that isn't a group fixture is treated as a KO
+   match and captured here; buildKoResults() maps each to its KO_BRACKET number. */
+function buildKoLive(){
+  KO_LIVE={};
+  Object.values(ESPN_EVENTS).forEach(ev=>{
+    try{
+      const comp=ev.competitions&&ev.competitions[0];if(!comp)return;
+      const cs=comp.competitors||[];if(cs.length<2)return;
+      const ra=resolveTeam(cs[0].team&&(cs[0].team.displayName||cs[0].team.name));
+      const rb=resolveTeam(cs[1].team&&(cs[1].team.displayName||cs[1].team.name));
+      if(!ra||!rb)return;                                  // TBD/unknown teams — skip until set
+      const pair=[ra,rb].sort().join('|');
+      const gi=FIX_BY_PAIR[pair];
+      if(gi!=null && ev.date && Math.abs(new Date(ev.date)-new Date(MATCHES[gi].gmt))<=3*864e5) return; // a group fixture
+      const st=comp.status&&comp.status.type&&comp.status.type.state;
+      const home=cs.find(c=>c.homeAway==='home')||cs[0];
+      const away=cs.find(c=>c.homeAway==='away')||cs[1];
+      const ko={pair, eventId:ev.id, gmt:ev.date, espnState:st,
+        h:resolveTeam(home.team&&(home.team.displayName||home.team.name)),
+        a:resolveTeam(away.team&&(away.team.displayName||away.team.name)),
+        v:(comp.venue&&comp.venue.fullName)||'', c:(comp.venue&&comp.venue.address&&comp.venue.address.city)||'',
+        clock:(st==='in')?((comp.status&&comp.status.displayClock)||''):'',
+        detail:(comp.status&&comp.status.type&&(comp.status.type.shortDetail||comp.status.type.description))||'',
+        hs:null,as:null,psH:null,psA:null,winner:null};
+      if(st==='in'||st==='post'){
+        const hs=parseInt(home.score,10), as=parseInt(away.score,10);
+        ko.hs=isNaN(hs)?null:hs; ko.as=isNaN(as)?null:as;
+        const ph=parseInt(home.shootoutScore,10), pa=parseInt(away.shootoutScore,10);
+        if(!isNaN(ph)&&!isNaN(pa)&&(ph||pa)){ko.psH=ph;ko.psA=pa;}
+      }
+      if(st==='post'){                                     // authoritative winner (handles ET + penalties)
+        const w=cs.find(c=>c.winner===true);
+        if(w) ko.winner=resolveTeam(w.team&&(w.team.displayName||w.team.name));
+        else if(ko.psH!=null) ko.winner=ko.psH>ko.psA?ko.h:ko.a;
+        else if(ko.hs!=null&&ko.as!=null&&ko.hs!==ko.as) ko.winner=ko.hs>ko.as?ko.h:ko.a;
+      }
+      KO_LIVE[pair]=ko;
+    }catch(e){}
+  });
+}
+/* Resolve a KO_BRACKET slot to a team name when known (no display metadata). */
+function koSlotTeam(slot){
+  if(slot.w!=null||slot.r!=null){const g=slot.w!=null?slot.w:slot.r,pos=slot.w!=null?0:1;
+    return groupComplete(g)?computeStandings(g)[pos].t:null;}
+  if(slot.t) return KO_THIRD_ASSIGN[slot.t.join('')]||null;
+  if(slot.m!=null) return KO_RESULT[slot.m]||null;
+  return null;
+}
+/* Map captured KO games onto bracket match numbers, advancing winners up the tree. */
+function buildKoResults(){
+  KO_RESULT={};
+  KO_THIRD_ASSIGN = Object.keys(GROUPS).every(groupComplete) ? thirdAllocation() : {};
+  for(let pass=0; pass<KO_BRACKET.length; pass++){       // iterate to fix-point as winners feed later rounds
+    let changed=false;
+    KO_BRACKET.forEach(x=>{
+      if(KO_RESULT[x.n]) return;
+      const ta=koSlotTeam(x.a), tb=koSlotTeam(x.b); if(!ta||!tb) return;
+      const ko=KO_LIVE[[ta,tb].sort().join('|')];
+      if(ko&&ko.winner){KO_RESULT[x.n]=ko.winner; changed=true;}
+    });
+    if(!changed) break;
+  }
+}
+/* The captured KO game for a bracket entry, if both teams are known. */
+function koGameFor(x){
+  const ta=koSlotTeam(x.a), tb=koSlotTeam(x.b); if(!ta||!tb) return null;
+  return KO_LIVE[[ta,tb].sort().join('|')]||null;
+}
+const KO_ROUND_LABEL={R32:'Round of 32',R16:'Round of 16',QF:'Quarterfinal',SF:'Semifinal',F:'Final',KO:'Knockout'};
+/* KO games for the Schedule: bracket entries we can pair up, plus any captured KO
+   game we couldn't map (e.g. a third-place seeding that differs from ours). */
+function koScheduleMatches(){
+  const out=[], seen=new Set();
+  KO_BRACKET.forEach(x=>{const ko=koGameFor(x);if(ko){out.push(Object.assign({},ko,{round:x.round,mno:x.n}));seen.add(ko.pair);}});
+  Object.values(KO_LIVE).forEach(ko=>{if(!seen.has(ko.pair))out.push(Object.assign({},ko,{round:'KO',mno:null}));});
+  return out;
+}
+function koFtLabel(m){ if(m.psH!=null) return 'Pens'; if(/extra|aet|a\.e\.t/i.test(m.detail||'')) return 'AET'; return 'FT'; }
 function rebuild(){
   ESPN_SCORERS={};ESPN_PENS={};
   Object.values(SQUADS).forEach(sq=>sq.players.forEach(p=>p.g=0));
   Object.values(ESPN_EVENTS).forEach(applyEvent);
   Object.values(ESPN_SCORERS).forEach(s=>{const sq=SQUADS[s.team];if(!sq)return;const pl=sq.players.find(p=>normalize(p.name)===normalize(s.name));if(pl)pl.g=s.goals;});
+  buildKoLive();
+  buildKoResults();
 }
 function renderScorers(){
   const el=document.getElementById('scorers');if(!el)return;

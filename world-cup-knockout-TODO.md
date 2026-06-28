@@ -33,17 +33,20 @@ Before this work the tab rendered a static grid of "TBD" slots and did nothing.
      match-order method is the widely-documented one, but cross-check against the
      official bracket and correct `thirdAllocation()` if any combination diverges.
 
-## TODO — CHECK IN ON **Sun 28 Jun 2026** (R32 starts; group stage ends Sat 27 Jun)
+## DONE (2) — 28 Jun
 
-2. **Live knockout results / advancement.** `MATCHES` only contains group-stage
-   fixtures, so `{m:NN}` (winner-of-match) slots render as `Winner #NN` and never
-   advance. To make R16→Final fill in:
-   - Add the KO fixtures to the data (or a parallel `KO_MATCHES`) with their
-     `gmt`/venue, and let the ESPN fetch (`applyEvent` / `FIX_BY_PAIR`) attach
-     scores the same way it does for the group stage.
-   - Resolve `{m:NN}` to the winner of match NN (handle extra time / penalties —
-     ESPN exposes shootout detail; group-stage code currently skips shootout
-     scoring plays, so KO winner logic needs its own path).
+2. **Live knockout results / advancement.** ✅ Implemented ESPN-driven (no hardcoded
+   KO schedule). `buildKoLive()` captures every non-group `fifa.world` event as a KO
+   match (teams, time, venue, score, `winner`, `shootoutScore`); `buildKoResults()`
+   maps each to its `KO_BRACKET` number and advances winners up the tree to a
+   fix-point; `resolveSlot()` fills `{m:NN}` from `KO_RESULT`. KO games now show on
+   the **Schedule** (round badge, AET/Pens, pen score) and the **bracket** shows live/
+   final scores + a ✓ on the advancing side. `ALL_DAYS` extended through Jul 19.
+   Validated structurally: advancement simulated R32→Final (all 31 resolve), and a
+   group/KO rematch can't corrupt a group result (date guard in `applyEvent`).
+   - **VERIFY LIVE (today):** confirm against real R32 games that ESPN's `winner` /
+     `shootoutScore` field names are correct and KO games map to the right bracket
+     slots. Watch the live page as today's games go final.
 
    **ESPN `fifa.world` knockout format notes (researched 24 Jun — VERIFY against
    the first real R32 payload before trusting):**
