@@ -483,7 +483,7 @@ html[data-theme="vhs-max"] .dh{text-shadow:-.7px 0 0 rgba(255,0,80,.4), .8px 0 0
     <div>
       <h1>FIFA WORLD CUP 2026 ⚡ LIVE TRACKER</h1>
       <div class="sub">Canada · Mexico · United States — 48 teams · 104 matches</div>
-      <div class="build" title="Build / deploy stamp">build 2026.06.28·1218Z</div>
+      <div class="build" title="Build / deploy stamp">build 2026.06.28·1227Z</div>
     </div>
     <div class="spacer"></div>
     <button id="installBtn" class="install-btn" type="button" hidden aria-haspopup="dialog"><span class="ib-ico">📲</span><span class="ib-lbl">Add to Home Screen</span></button>
@@ -1228,7 +1228,8 @@ const THIRD_FIXTURES=[
   {n:85, pool:['E','F','G','I','J']},
   {n:87, pool:['D','E','I','J','L']}
 ];
-let KO_THIRD_ASSIGN={};   // poolKey ("ABCDF") -> team, set in renderBracket once all groups are done
+let KO_THIRD_ASSIGN={};     // poolKey ("ABCDF") -> third-place team
+let KO_THIRD_REAL=new Set();// poolKeys whose third was read from the actual ESPN draw (not projected)
 function thirdAllocation(){
   const ranked=thirdsRanking().slice(0,8).map(r=>({team:r.t,g:r.g}));   // best -> worst
   const res={}, used=new Set();
@@ -1245,6 +1246,28 @@ function thirdAllocation(){
   })(0);
   return res;
 }
+/* Authoritative third-place seeding: for each third-place fixture, anchor on its
+   (known) group winner and read the real opponent straight from the ESPN draw.
+   Falls back to the projected allocation only for fixtures ESPN hasn't filled yet. */
+function ensureThirdAssign(){
+  const assign={}, real=new Set();
+  const byTeam={};
+  Object.values(KO_LIVE).forEach(ko=>{ if(ko.h)byTeam[ko.h]=ko; if(ko.a)byTeam[ko.a]=ko; });
+  THIRD_FIXTURES.forEach(fx=>{
+    const x=KO_BRACKET.find(b=>b.n===fx.n);
+    const winSlot = x.a.w!=null?x.a : (x.b.w!=null?x.b:null);
+    if(!winSlot||!groupComplete(winSlot.w)) return;
+    const winTeam=computeStandings(winSlot.w)[0].t;
+    const ko=byTeam[winTeam]; if(!ko) return;
+    const opp = ko.h===winTeam ? ko.a : ko.h;
+    if(opp){ assign[fx.pool.join('')]=opp; real.add(fx.pool.join('')); }
+  });
+  if(Object.keys(GROUPS).every(groupComplete)){           // projected fallback for any not-yet-scheduled fixture
+    const greedy=thirdAllocation();
+    Object.keys(greedy).forEach(k=>{ if(!(k in assign)) assign[k]=greedy[k]; });
+  }
+  KO_THIRD_ASSIGN=assign; KO_THIRD_REAL=real;
+}
 /* Resolve a bracket slot token to a team (when known) or a placeholder label. */
 function resolveSlot(slot){
   if(slot.w!=null||slot.r!=null){
@@ -1253,8 +1276,9 @@ function resolveSlot(slot){
     return {team:null, confirmed:false, label:(slot.w!=null?'1':'2')+g};
   }
   if(slot.t){
-    const team=KO_THIRD_ASSIGN[slot.t.join('')];
-    if(team) return {team, confirmed:true, projected:true};
+    const key=slot.t.join('');
+    const team=KO_THIRD_ASSIGN[key];
+    if(team) return {team, confirmed:true, projected:!KO_THIRD_REAL.has(key)};
     return {team:null, confirmed:false, label:'3rd · '+slot.t.join('/'), kind:'third'};
   }
   if(slot.m!=null){
@@ -1275,7 +1299,7 @@ function slotHtml(slot,winTeam){
   return `<div class="slot ${r.kind==='third'?'third':r.kind==='win'?'win':''}">${esc(r.label)}</div>`;
 }
 function renderBracket(){
-  KO_THIRD_ASSIGN = Object.keys(GROUPS).every(groupComplete) ? thirdAllocation() : {};
+  ensureThirdAssign();
   const rounds=[['R32','Round of 32'],['R16','Round of 16'],['QF','Quarterfinals'],['SF','Semifinals'],['F','Final']];
   const box=document.getElementById('bracketBox'); box.innerHTML='';
   rounds.forEach(([code,name])=>{
@@ -1862,7 +1886,7 @@ function koSlotTeam(slot){
 /* Map captured KO games onto bracket match numbers, advancing winners up the tree. */
 function buildKoResults(){
   KO_RESULT={};
-  KO_THIRD_ASSIGN = Object.keys(GROUPS).every(groupComplete) ? thirdAllocation() : {};
+  ensureThirdAssign();
   for(let pass=0; pass<KO_BRACKET.length; pass++){       // iterate to fix-point as winners feed later rounds
     let changed=false;
     KO_BRACKET.forEach(x=>{
