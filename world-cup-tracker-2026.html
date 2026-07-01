@@ -483,7 +483,7 @@ html[data-theme="vhs-max"] .dh{text-shadow:-.7px 0 0 rgba(255,0,80,.4), .8px 0 0
     <div>
       <h1>FIFA WORLD CUP 2026 ⚡ LIVE TRACKER</h1>
       <div class="sub">Canada · Mexico · United States — 48 teams · 104 matches</div>
-      <div class="build" title="Build / deploy stamp">build 2026.07.01·1732Z</div>
+      <div class="build" title="Build / deploy stamp">build 2026.07.01·1741Z</div>
     </div>
     <div class="spacer"></div>
     <button id="installBtn" class="install-btn" type="button" hidden aria-haspopup="dialog"><span class="ib-ico">📲</span><span class="ib-lbl">Add to Home Screen</span></button>
@@ -1277,19 +1277,24 @@ function thirdAllocation(){
    Falls back to the projected allocation only for fixtures ESPN hasn't filled yet. */
 function ensureThirdAssign(){
   const assign={}, real=new Set(), used=new Set();
-  const byTeam={};
-  Object.values(KO_LIVE).forEach(ko=>{ if(ko.h)byTeam[ko.h]=ko; if(ko.a)byTeam[ko.a]=ko; });
+  const byTeam={};   // team -> all their KO games (a winner may already have a later-round game too)
+  Object.values(KO_LIVE).forEach(ko=>{
+    if(ko.h)(byTeam[ko.h]=byTeam[ko.h]||[]).push(ko);
+    if(ko.a)(byTeam[ko.a]=byTeam[ko.a]||[]).push(ko);
+  });
   THIRD_FIXTURES.forEach(fx=>{
     const x=KO_BRACKET.find(b=>b.n===fx.n);
     const winSlot = x.a.w!=null?x.a : (x.b.w!=null?x.b:null);
     if(!winSlot || groupFtCount(winSlot.w)===0) return;
     const winTeam=computeStandings(winSlot.w)[0].t;       // group leader = winner at KO time
-    const ko=byTeam[winTeam]; if(!ko) return;             // winner's actual KO game from ESPN
+    const games=(byTeam[winTeam]||[]).slice().sort((a,b)=>new Date(a.gmt)-new Date(b.gmt));
+    const ko=games[0]; if(!ko) return;                    // earliest KO game = this winner's Round of 32 match
     const opp = ko.h===winTeam ? ko.a : ko.h;
-    if(opp && !used.has(opp)){ assign[fx.pool.join('')]=opp; real.add(fx.pool.join('')); used.add(opp); }
+    if(opp && fx.pool.includes(TEAM_GROUP[opp]) && !used.has(opp)){   // opponent must be an eligible third
+      assign[fx.pool.join('')]=opp; real.add(fx.pool.join('')); used.add(opp);
+    }
   });
-  // No projected guessing: any third-place fixture ESPN hasn't scheduled stays a placeholder,
-  // so a team can never appear in two slots and a wrong guess is never shown.
+  // No projected guessing: any third-place fixture ESPN hasn't scheduled stays a placeholder.
   KO_THIRD_ASSIGN=assign; KO_THIRD_REAL=real;
 }
 /* Resolve a bracket slot token to a team (when known) or a placeholder label. */
