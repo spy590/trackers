@@ -483,7 +483,7 @@ html[data-theme="vhs-max"] .dh{text-shadow:-.7px 0 0 rgba(255,0,80,.4), .8px 0 0
     <div>
       <h1>FIFA WORLD CUP 2026 ⚡ LIVE TRACKER</h1>
       <div class="sub">Canada · Mexico · United States — 48 teams · 104 matches</div>
-      <div class="build" title="Build / deploy stamp">build 2026.06.28·1227Z</div>
+      <div class="build" title="Build / deploy stamp">build 2026.07.01·1732Z</div>
     </div>
     <div class="spacer"></div>
     <button id="installBtn" class="install-btn" type="button" hidden aria-haspopup="dialog"><span class="ib-ico">📲</span><span class="ib-lbl">Add to Home Screen</span></button>
@@ -523,7 +523,7 @@ html[data-theme="vhs-max"] .dh{text-shadow:-.7px 0 0 rgba(255,0,80,.4), .8px 0 0
         <label class="hint">Team
           <select id="fTeam"><option value="">All teams</option></select>
         </label>
-        <label class="hint"><input type="checkbox" id="fUpcoming" checked> Upcoming only</label>
+        <label class="hint"><input type="checkbox" id="fUpcoming" checked> Upcoming &amp; live</label>
         <span class="hint" id="schedCount"></span>
       </div>
       <div id="scheduleBody"></div>
@@ -556,7 +556,7 @@ html[data-theme="vhs-max"] .dh{text-shadow:-.7px 0 0 rgba(255,0,80,.4), .8px 0 0
   <section class="panel" id="bracket">
     <div class="card">
       <h3>Knockout stage</h3>
-      <div class="hint">Round of 32 → Round of 16 → Quarterfinals → Semifinals → Final. Group winners and runners-up drop into their fixed bracket slots — shown live as standings firm up (a <span class="prov">·</span> marks a slot the group hasn't yet clinched). Once all 12 groups finish, the eight best third-placed teams are seeded into their fixtures via FIFA's allocation method (marked <span class="proj">◇</span>). Later-round slots fill in as knockout results land.</div>
+      <div class="hint">Round of 32 → Round of 16 → Quarterfinals → Semifinals → Final. Group winners and runners-up drop into their fixed bracket slots as standings firm up (a <span class="prov">·</span> marks a slot the group hasn't yet clinched). Third-placed teams are seeded from the actual Round of 32 draw, and each match shows its live/final score with a ✓ on the advancing side. Later-round slots fill in as knockout results land.</div>
     </div>
     <div class="card"><div class="bracket" id="bracketBox"></div></div>
     <div class="card">
@@ -1112,14 +1112,14 @@ function renderSchedule(){
     if(g&&grp!==g) return;
     if(t&&m.h!==t&&m.a!==t) return;
     const st=matchState(m);
-    if(up&&(st!=='upcoming')) return;
+    if(up&&st==='ft') return;   // "hide finished": keep upcoming AND in-progress (live) games
     days[bucket(m)].push({m,st,grp}); shown++;
   });
   if(!g){                                          // KO games have no group — hidden when a group filter is set
     koScheduleMatches().forEach(m=>{
       if(t&&m.h!==t&&m.a!==t) return;
       const st=matchState(m);
-      if(up&&(st!=='upcoming')) return;
+      if(up&&st==='ft') return;   // "hide finished": keep upcoming AND in-progress (live) games
       days[bucket(m)].push({m,st,ko:true}); shown++;
     });
   }
@@ -1157,21 +1157,47 @@ function renderSchedule(){
 }
 function isToday(m){const k=new Date(m.gmt),n=NOW();return k.toDateString()===n.toDateString();}
 
-/* ---------- STANDINGS ---------- */
+/* ---------- STANDINGS ----------
+   FIFA tiebreakers: 1) points, 2) goal difference (all), 3) goals for (all), then
+   among teams still level: 4) head-to-head points, 5) H2H goal diff, 6) H2H goals,
+   then fair play / drawing of lots (not available → alphabetical as a stable proxy). */
 function computeStandings(g){
   const rows={}; GROUPS[g].forEach(t=>rows[t]={t,P:0,W:0,D:0,L:0,GF:0,GA:0,Pts:0});
+  const gm=[];
   MATCHES.forEach(m=>{
     if(TEAM_GROUP[m.h]!==g) return;
     if(m.hs==null||m.as==null) return;
     if(matchState(m)!=='ft') return;   // only count finished matches, not live in-progress scores
+    gm.push(m);
     const H=rows[m.h],A=rows[m.a];
     H.P++;A.P++;H.GF+=m.hs;H.GA+=m.as;A.GF+=m.as;A.GA+=m.hs;
     if(m.hs>m.as){H.W++;A.L++;H.Pts+=3;}
     else if(m.hs<m.as){A.W++;H.L++;A.Pts+=3;}
     else{H.D++;A.D++;H.Pts++;A.Pts++;}
   });
-  return Object.values(rows).map(r=>({...r,GD:r.GF-r.GA}))
-    .sort((a,b)=>b.Pts-a.Pts||b.GD-a.GD||b.GF-a.GF||a.t.localeCompare(b.t));
+  const arr=Object.values(rows).map(r=>({...r,GD:r.GF-r.GA}))
+    .sort((a,b)=>b.Pts-a.Pts||b.GD-a.GD||b.GF-a.GF||0);
+  // break remaining ties (equal Pts, GD, GF) via a mini-table of the matches among them
+  function h2h(names){
+    const s={}; names.forEach(t=>s[t]={t,Pts:0,GF:0,GA:0});
+    gm.forEach(m=>{ if(s[m.h]&&s[m.a]){
+      s[m.h].GF+=m.hs;s[m.h].GA+=m.as;s[m.a].GF+=m.as;s[m.a].GA+=m.hs;
+      if(m.hs>m.as)s[m.h].Pts+=3; else if(m.hs<m.as)s[m.a].Pts+=3; else{s[m.h].Pts++;s[m.a].Pts++;}
+    }});
+    Object.values(s).forEach(x=>x.GD=x.GF-x.GA);
+    return s;
+  }
+  for(let i=0;i<arr.length;){
+    let j=i+1;
+    while(j<arr.length&&arr[j].Pts===arr[i].Pts&&arr[j].GD===arr[i].GD&&arr[j].GF===arr[i].GF) j++;
+    if(j-i>1){
+      const tied=arr.slice(i,j), s=h2h(tied.map(x=>x.t));
+      tied.sort((a,b)=>s[b.t].Pts-s[a.t].Pts||s[b.t].GD-s[a.t].GD||s[b.t].GF-s[a.t].GF||a.t.localeCompare(b.t));
+      for(let k=0;k<tied.length;k++) arr[i+k]=tied[k];
+    }
+    i=j;
+  }
+  return arr;
 }
 function renderGroups(){
   const grid=document.getElementById('groupsGrid'); grid.innerHTML='';
@@ -1250,22 +1276,20 @@ function thirdAllocation(){
    (known) group winner and read the real opponent straight from the ESPN draw.
    Falls back to the projected allocation only for fixtures ESPN hasn't filled yet. */
 function ensureThirdAssign(){
-  const assign={}, real=new Set();
+  const assign={}, real=new Set(), used=new Set();
   const byTeam={};
   Object.values(KO_LIVE).forEach(ko=>{ if(ko.h)byTeam[ko.h]=ko; if(ko.a)byTeam[ko.a]=ko; });
   THIRD_FIXTURES.forEach(fx=>{
     const x=KO_BRACKET.find(b=>b.n===fx.n);
     const winSlot = x.a.w!=null?x.a : (x.b.w!=null?x.b:null);
-    if(!winSlot||!groupComplete(winSlot.w)) return;
-    const winTeam=computeStandings(winSlot.w)[0].t;
-    const ko=byTeam[winTeam]; if(!ko) return;
+    if(!winSlot || groupFtCount(winSlot.w)===0) return;
+    const winTeam=computeStandings(winSlot.w)[0].t;       // group leader = winner at KO time
+    const ko=byTeam[winTeam]; if(!ko) return;             // winner's actual KO game from ESPN
     const opp = ko.h===winTeam ? ko.a : ko.h;
-    if(opp){ assign[fx.pool.join('')]=opp; real.add(fx.pool.join('')); }
+    if(opp && !used.has(opp)){ assign[fx.pool.join('')]=opp; real.add(fx.pool.join('')); used.add(opp); }
   });
-  if(Object.keys(GROUPS).every(groupComplete)){           // projected fallback for any not-yet-scheduled fixture
-    const greedy=thirdAllocation();
-    Object.keys(greedy).forEach(k=>{ if(!(k in assign)) assign[k]=greedy[k]; });
-  }
+  // No projected guessing: any third-place fixture ESPN hasn't scheduled stays a placeholder,
+  // so a team can never appear in two slots and a wrong guess is never shown.
   KO_THIRD_ASSIGN=assign; KO_THIRD_REAL=real;
 }
 /* Resolve a bracket slot token to a team (when known) or a placeholder label. */
