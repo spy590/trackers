@@ -248,6 +248,8 @@ table.stand tr.q2 td:first-child{box-shadow:inset 3px 0 0 var(--gold);}
 .bmatch .slot.win{opacity:.7;}
 .bmatch .slot.won{color:var(--accent);font-weight:800;}
 .bmatch .slot.won::after{content:" ✓";color:var(--accent2);font-size:10px;}
+.bmatch .slot .pk{display:inline-block;margin-left:4px;font-size:8px;font-weight:800;color:var(--bg);
+  background:var(--gold);border-radius:3px;padding:1px 3px;vertical-align:1px;letter-spacing:.3px;}
 .bmatch .bscore{text-align:center;font-size:11px;font-weight:800;color:var(--ink);margin-top:3px;letter-spacing:.3px;}
 .bmatch .bscore.live{color:var(--live);}
 .bmatch .bscore .bp{font-size:9px;color:var(--muted);font-weight:700;}
@@ -483,7 +485,7 @@ html[data-theme="vhs-max"] .dh{text-shadow:-.7px 0 0 rgba(255,0,80,.4), .8px 0 0
     <div>
       <h1>FIFA WORLD CUP 2026 ⚡ LIVE TRACKER</h1>
       <div class="sub">Canada · Mexico · United States — 48 teams · 104 matches</div>
-      <div class="build" title="Build / deploy stamp">build 2026.07.01·1741Z</div>
+      <div class="build" title="Build / deploy stamp">build 2026.07.01·1744Z</div>
     </div>
     <div class="spacer"></div>
     <button id="installBtn" class="install-btn" type="button" hidden aria-haspopup="dialog"><span class="ib-ico">📲</span><span class="ib-lbl">Add to Home Screen</span></button>
@@ -1317,13 +1319,14 @@ function resolveSlot(slot){
   }
   return {team:null, confirmed:false, label:'TBD'};
 }
-function slotHtml(slot,winTeam){
+function slotHtml(slot,winTeam,winPens){
   const r=resolveSlot(slot);
   if(r.team){
     const prov=r.confirmed?'':'<span class="prov" title="Current standing — group not yet clinched"> ·</span>';
     const mark=r.projected?'<span class="proj" title="Seeded via FIFA\'s third-place allocation method"> ◇</span>':'';
-    const won=winTeam&&r.team===winTeam?' won':'';
-    return `<div class="slot filled${r.confirmed?' conf':''}${won}"><span class="tlink" data-team="${esc(r.team)}">${crest(r.team,'crest-sm')} ${esc(r.team)}</span>${prov}${mark}</div>`;
+    const isWon=winTeam&&r.team===winTeam;
+    const pk=(isWon&&winPens)?'<span class="pk" title="Advanced on penalties">P</span>':'';
+    return `<div class="slot filled${r.confirmed?' conf':''}${isWon?' won':''}"><span class="tlink" data-team="${esc(r.team)}">${crest(r.team,'crest-sm')} ${esc(r.team)}</span>${prov}${mark}${pk}</div>`;
   }
   return `<div class="slot ${r.kind==='third'?'third':r.kind==='win'?'win':''}">${esc(r.label)}</div>`;
 }
@@ -1337,13 +1340,14 @@ function renderBracket(){
     KO_BRACKET.filter(x=>x.round===code).forEach(x=>{
       const ko=koGameFor(x);
       const win=ko&&ko.winner;
+      const winPens=win&&ko.psH!=null;
       let score='';
       if(ko&&(ko.espnState==='post'||ko.espnState==='in')){
-        const pens=ko.psH!=null?` <span class="bp">(${ko.psH}–${ko.psA}p)</span>`:'';
+        const pens=ko.psH!=null?` <span class="bp">(${ko.psH}–${ko.psA} pens)</span>`:'';
         const live=ko.espnState==='in';
         score=`<div class="bscore${live?' live':''}">${ko.hs??0}–${ko.as??0}${pens}${live?' ●':''}</div>`;
       }
-      h+=`<div class="bmatch"><div class="mno">#${x.n}</div>${slotHtml(x.a,win)}${slotHtml(x.b,win)}${score}${x.venue?`<div class="dt">${esc(x.venue)}</div>`:''}</div>`;
+      h+=`<div class="bmatch"><div class="mno">#${x.n}</div>${slotHtml(x.a,win,winPens)}${slotHtml(x.b,win,winPens)}${score}${x.venue?`<div class="dt">${esc(x.venue)}</div>`:''}</div>`;
     });
     c.innerHTML=h; box.appendChild(c);
   });
