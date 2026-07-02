@@ -485,7 +485,7 @@ html[data-theme="vhs-max"] .dh{text-shadow:-.7px 0 0 rgba(255,0,80,.4), .8px 0 0
     <div>
       <h1>FIFA WORLD CUP 2026 ⚡ LIVE TRACKER</h1>
       <div class="sub">Canada · Mexico · United States — 48 teams · 104 matches</div>
-      <div class="build" title="Build / deploy stamp">build 2026.07.01·1744Z</div>
+      <div class="build" title="Build / deploy stamp">build 2026.07.02·0206Z</div>
     </div>
     <div class="spacer"></div>
     <button id="installBtn" class="install-btn" type="button" hidden aria-haspopup="dialog"><span class="ib-ico">📲</span><span class="ib-lbl">Add to Home Screen</span></button>
@@ -1138,7 +1138,7 @@ function renderSchedule(){
       else center=`<div class="m-vs">v</div><div class="m-time">${localTime(m.gmt)}</div>`;
       const el=document.createElement('div');
       el.className='match'+(isToday(m)?' today':'');
-      if(!ko) el.dataset.match=MATCHES.indexOf(m);
+      el.dataset.match = ko ? ('k:'+m.pair) : MATCHES.indexOf(m);
       const venue = ko
         ? `<div class="m-venue">${esc(m.v||'Venue TBD')}${m.c?', '+esc(m.c):''}</div>`
         : `<div class="m-venue"><span class="vlink" data-venue="${esc(m.v)}">${esc(m.v)}</span>, <span class="vlink" data-venue="${esc(m.v)}">${esc(m.c)}</span></div>`;
@@ -1702,7 +1702,7 @@ document.addEventListener('click',e=>{
   const tl=e.target.closest('.tlink,.lrow[data-team]');
   if(tl){if(venueBack.contains(tl))closeVenue();if(matchBack.contains(tl))closeMatch();openTeam(tl.dataset.team);return;}
   const ml=e.target.closest('[data-match]');
-  if(ml){closeVenue();openMatch(+ml.dataset.match);return;}
+  if(ml){closeVenue();openMatch(ml.dataset.match);return;}
 });
 /* ---------- KPI CARD CLICKS ---------- */
 const KPI_ACT={kpiTeamsCard:teamsOverlay,kpiMatchesCard:matchesOverlay,kpiCitiesCard:citiesOverlay,kpiPlayedCard:playedOverlay};
@@ -2057,7 +2057,8 @@ function extractFeed(j){
   return out;
 }
 async function refreshLiveFeeds(){
-  const live=MATCHES.filter(m=>matchState(m)==='live'&&m.eventId);
+  const live=MATCHES.filter(m=>matchState(m)==='live'&&m.eventId)
+    .concat(Object.values(KO_LIVE).filter(m=>matchState(m)==='live'&&m.eventId));   // include knockout games
   await Promise.all(live.map(async m=>{
     try{const j=await fetchSummary(m.eventId);m.feed=extractFeed(j);}catch(e){/* keep prior feed */}
   }));
@@ -2089,35 +2090,45 @@ function paintMatch(m,st){
     `<span class="mtl">${crest(m.h)} <span class="tlink" data-team="${esc(m.h)}">${esc(m.h)}</span> `
     +`<span class="mtl-sc">${sc}</span> `
     +`<span class="tlink" data-team="${esc(m.a)}">${esc(m.a)}</span> ${crest(m.a)}</span>`;
+  const venueHtml = m.pair
+    ? `${esc(m.v||'')}${m.c?', '+esc(m.c):''}`                                   // knockout venue (ESPN name, not in our map)
+    : `<span class="vlink" data-venue="${esc(m.v)}">${esc(m.v)}</span>, ${esc(m.c)}`;
   document.getElementById('matchSub').innerHTML=
-    `${esc(localDayLabel(m.gmt))} · ${matchStatusLabel(m,st)} · <span class="vlink" data-venue="${esc(m.v)}">${esc(m.v)}</span>, ${esc(m.c)}`;
+    `${esc(localDayLabel(m.gmt))} · ${matchStatusLabel(m,st)} · ${venueHtml}`;
   renderMatchBody(m,st);
 }
-async function openMatch(idx){
-  const m=MATCHES[idx];if(!m)return;
-  currentMatchIdx=idx;
+/* a match reference is either a MATCHES index ("42") or a knockout pair ("k:USA|Bosnia") */
+function matchByRef(ref){ ref=String(ref); return ref.slice(0,2)==='k:' ? KO_LIVE[ref.slice(2)] : MATCHES[+ref]; }
+async function openMatch(ref){
+  ref=String(ref);
+  const m=matchByRef(ref);if(!m)return;
+  currentMatchIdx=ref;
   const head=document.querySelector('#matchBack .ov-head');if(head)head.style.background='';
   paintMatch(m,matchState(m));
   matchBack.classList.add('open');
   if(m.eventId){
     try{const j=await fetchSummary(m.eventId);m.feed=extractFeed(j);
-      if(currentMatchIdx===idx&&matchBack.classList.contains('open'))paintMatch(m,matchState(m));
-    }catch(e){const ld=document.getElementById('mFeedLoad');if(ld&&currentMatchIdx===idx)ld.textContent='Play-by-play unavailable right now.';}
+      if(currentMatchIdx===ref&&matchBack.classList.contains('open'))paintMatch(matchByRef(ref)||m,matchState(m));
+    }catch(e){const ld=document.getElementById('mFeedLoad');if(ld&&currentMatchIdx===ref)ld.textContent='Play-by-play unavailable right now.';}
   }
 }
 function closeMatch(){matchBack.classList.remove('open');currentMatchIdx=null;}
 function renderLiveNow(){
   const box=document.getElementById('liveNow');if(!box)return;
-  const live=MATCHES.filter(m=>matchState(m)==='live');
+  const live=MATCHES.filter(m=>matchState(m)==='live').map(m=>({m,ref:String(MATCHES.indexOf(m)),ko:false}))
+    .concat(Object.values(KO_LIVE).filter(m=>matchState(m)==='live').map(m=>({m,ref:'k:'+m.pair,ko:true})));   // include knockout games
   if(!live.length){box.innerHTML='';return;}
   let html=`<div class="livecard"><div class="lh"><span class="live-dot on"></span>Live now · ${live.length} match${live.length>1?'es':''}</div>`;
-  live.forEach(m=>{
-    html+=`<div class="lmatch" data-match="${MATCHES.indexOf(m)}"><div class="lscore">
+  live.forEach(({m,ref,ko})=>{
+    const venue = ko
+      ? `📍 ${esc(m.v||'')}${m.c?', '+esc(m.c):''}`
+      : `📍 <span class="vlink" data-venue="${esc(m.v)}">${esc(m.v)}</span>, <span class="vlink" data-venue="${esc(m.v)}">${esc(m.c)}</span>`;
+    html+=`<div class="lmatch" data-match="${ref}"><div class="lscore">
       <span class="nm h tlink" data-team="${esc(m.h)}">${esc(m.h)} ${crest(m.h)}</span>
       <span><span class="sc">${m.hs??0}–${m.as??0}</span><div class="mn">${esc(m.clock||"LIVE")}</div></span>
       <span class="nm tlink" data-team="${esc(m.a)}">${crest(m.a)} ${esc(m.a)}</span>
     </div>
-    <div class="mapcap" style="text-align:center;margin:0 0 8px">📍 <span class="vlink" data-venue="${esc(m.v)}">${esc(m.v)}</span>, <span class="vlink" data-venue="${esc(m.v)}">${esc(m.c)}</span></div>`;
+    <div class="mapcap" style="text-align:center;margin:0 0 8px">${venue}</div>`;
     const feed=(m.feed||[]).slice().reverse().slice(0,8);
     if(feed.length){
       html+=`<div class="feed">`+feed.map(f=>`<div class="fevent"><span class="fc">${esc(f.clock||'')}</span><span class="fi">${evIcon(f.type,f.txt)}</span><span class="ft2">${esc(f.txt)}${f.team?` <span class="gchip">(${esc(f.team)})</span>`:''}</span></div>`).join('')+`</div>`;
@@ -2129,7 +2140,7 @@ function renderLiveNow(){
   html+=`</div>`;
   box.innerHTML=html;
 }
-function renderAll(){renderLiveNow();renderSchedule();renderGroups();renderBracket();renderStatus();renderScorers();renderLeaders();if(document.getElementById('stats').classList.contains('active'))renderStatsCharts();if(currentView==='team'&&currentTeam&&ovBack.classList.contains('open'))openTeam(currentTeam,true);if(currentMatchIdx!=null&&matchBack.classList.contains('open')){const m=MATCHES[currentMatchIdx];if(m&&matchState(m)==='live')paintMatch(m,'live');}}
+function renderAll(){renderLiveNow();renderSchedule();renderGroups();renderBracket();renderStatus();renderScorers();renderLeaders();if(document.getElementById('stats').classList.contains('active'))renderStatsCharts();if(currentView==='team'&&currentTeam&&ovBack.classList.contains('open'))openTeam(currentTeam,true);if(currentMatchIdx!=null&&matchBack.classList.contains('open')){const m=matchByRef(currentMatchIdx);if(m&&matchState(m)==='live')paintMatch(m,'live');}}
 async function poll(days){
   try{
     const lists=await Promise.all(days.map(d=>fetchDay(d).catch(()=>null)));
